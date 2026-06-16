@@ -58,6 +58,8 @@ interface AdminPanelProps {
   onClose: () => void;
   triggerPushNotification: (text: string) => void;
   firebaseStatus?: any;
+  settings: { geminiApiKey: string };
+  onSaveSettings: (newSettings: { geminiApiKey: string }) => Promise<boolean>;
 }
 
 export default function AdminPanel({
@@ -84,7 +86,9 @@ export default function AdminPanel({
   setUpdates,
   onClose,
   triggerPushNotification,
-  firebaseStatus
+  firebaseStatus,
+  settings,
+  onSaveSettings
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<
     | "analytics"
@@ -97,9 +101,20 @@ export default function AdminPanel({
     | "land"
     | "cyber_cafe"
     | "categories"
+    | "settings"
   >("analytics");
   const [notificationMsg, setNotificationMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // A.I. Settings states
+  const [apiKeyInput, setApiKeyInput] = useState(settings?.geminiApiKey || "");
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  React.useEffect(() => {
+    if (settings?.geminiApiKey) {
+      setApiKeyInput(settings.geminiApiKey);
+    }
+  }, [settings?.geminiApiKey]);
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const scrollTabs = (direction: "left" | "right") => {
@@ -530,7 +545,8 @@ export default function AdminPanel({
             { id: "health", label: "হেলথ ও বিমা", icon: HeartPulse, count: services.filter(s => s.category === "health").length },
             { id: "land", label: "জমি ও পরচা", icon: FileCheck, count: services.filter(s => s.category === "land").length },
             { id: "cyber_cafe", label: "সাইবার ক্যাফে", icon: Laptop, count: services.filter(s => s.category === "cyber_cafe").length },
-            { id: "categories", label: "বিভাগ পরিচালনা", icon: Grid, count: categories.length }
+            { id: "categories", label: "বিভাগ পরিচালনা", icon: Grid, count: categories.length },
+            { id: "settings", label: "এআই সিস্টেম সেটিংস", icon: Settings, count: null }
           ].map((tab) => {
             const IconComponent = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -1684,6 +1700,98 @@ export default function AdminPanel({
                   })}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 9: AI SETTINGS PLAN */}
+        {activeTab === "settings" && (
+          <div className="space-y-6 max-w-4xl">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h3 className="text-sm md:text-base font-extrabold text-slate-800 flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-bengali-orange animate-spin-slow" />
+                  এআই সিস্টেম কনফিগারেশন ও সেটিংস (AI Configuration)
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium mt-1">
+                  এখানে আপনার Gemini (কৃত্তিম বুদ্ধিমত্তা) এপিআই কী সেট করুন যাতে চ্যাট হেল্পার সর্বদা সঠিক রিয়েল-টাইম উত্তর দিতে পারে।
+                </p>
+              </div>
+
+              <div className="bg-amber-50/50 border border-amber-100/70 rounded-xl p-4 text-xs text-amber-900 space-y-2">
+                <h4 className="font-extrabold flex items-center gap-1.5 text-amber-800">
+                  <AlertCircle className="h-4 w-4 text-bengali-orange shrink-0" />
+                  কেন কৃত্তিম বুদ্ধিমত্তা এপিআই কি প্রয়োজন?
+                </h4>
+                <p className="leading-relaxed font-semibold text-slate-650">
+                  আপনার কাস্টম বা নিজস্ব Gemini API Key ব্যবহার করলে বাংলার সেবা পোর্টালের সহকারী চ্যাটবট অ্যাক্টিভ হবে। এর ফলে সরকারি ক্যাটাগরি, সুবিধা, এবং সাধারণ প্রশ্নোত্তর যেকোনো নাগরিক সম্পূর্ণ রিয়েল-টাইম লাইভ বাংলায় জানতে পারবেন।
+                </p>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                try {
+                  const success = await onSaveSettings({ geminiApiKey: apiKeyInput });
+                  if (success) {
+                    showNotification("এআই সিস্টেম সেটিংস সফলভাবে সংরক্ষণ করা হয়েছে!");
+                  } else {
+                    showNotification("সেটিংস সেভ করতে ব্যর্থ হয়েছে।");
+                  }
+                } catch (err) {
+                  showNotification("সার্ভার ত্রুটি ঘটেছে।");
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }} className="space-y-5">
+                <div>
+                  <label className="text-[11px] font-extrabold text-slate-700 block mb-2">Gemini API Key (সহায়তা চ্যাট জন্য)</label>
+                  <div className="relative rounded-lg shadow-sm">
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder="AIZAsy..."
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange pr-20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+                    >
+                      {showApiKey ? "লুকান" : "দেখুন"}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1.5 font-semibold">
+                    * আপনার কাস্টম API কি ডাটাবেসে রিয়েল-টাইমে ও সুরক্ষিতভাবে পিং হবে। এটি বাংলায় উত্তর দেওয়ার জন্য Google Gemini SDK (gemini-3.5-flash) দ্বারা ব্যবহৃত হয়।
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between border-t border-slate-100 pt-5">
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <span className="text-slate-500">বর্তমান অবস্থা:</span>
+                    {settings?.geminiApiKey ? (
+                      <span className="text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border border-emerald-100 flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        সক্রিয় ও কনফিগারড্ (Configured)
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                        অসংরক্ষিত (Not Set)
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-bengali-orange hover:bg-orange-650 text-white font-extrabold py-2 px-5 rounded-lg text-xs tracking-wider transition-all shadow-sm flex items-center gap-1.5 cursor-pointer border border-orange-600/50 disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    {isSubmitting ? "সংরক্ষণ করা হচ্ছে..." : "সেটিংস সংরক্ষণ করুন (Save)"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

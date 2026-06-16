@@ -66,6 +66,8 @@ import { db, rtdb, isPlaceholderFirebase } from "./lib/firebase";
 
 import AiAssistant from "./components/AiAssistant";
 import AdminPanel from "./components/AdminPanel";
+// @ts-ignore
+import kolkataHeroBanner from "./assets/images/kolkata_hero_banner_1781608902642.jpg";
 
 const renderOfficialLogo = (id: string) => {
   switch (id) {
@@ -1246,12 +1248,26 @@ export default function App() {
               onClose={() => setIsAdminOpen(false)}
               triggerPushNotification={triggerPushBroadcast}
               firebaseStatus={firebaseStatus}
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
             />
           </div>
         ) : (
           <>
             {/* 1. SEAMLESS COMPACT SEARCH HERO (Lightened, modern light-orange-cream gradient) */}
-            <div className="w-full bg-gradient-to-b from-amber-50/75 to-[#FFF8F4] py-8 md:py-14 px-4 md:px-8 border-b border-orange-100/70 select-none relative overflow-hidden">
+            <div className="w-full relative py-8 md:py-14 px-4 md:px-8 border-b border-orange-100/70 select-none overflow-hidden">
+              {/* Blurred West Bengal landmarks hero background image */}
+              <div className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
+                <img
+                  src={kolkataHeroBanner}
+                  alt="পশ্চিমবঙ্গ হেরিটেজ ব্যানার"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover blur-[1px] opacity-35 scale-102 pointer-events-none"
+                />
+                {/* Overlay modern smooth gradient for optimal readability */}
+                <div className="absolute inset-0 bg-gradient-to-b from-amber-50/60 via-amber-50/30 to-[#FFF8F4]/80"></div>
+              </div>
+
               {/* Subtle background abstract shapes */}
               <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
               <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full blur-2xl -ml-20 -mb-20 pointer-events-none"></div>
