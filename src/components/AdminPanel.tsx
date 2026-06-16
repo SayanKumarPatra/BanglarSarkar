@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Scheme, Job, Scholarship, ServiceItem, AppUpdate } from "../data";
+import React, { useState, useRef } from "react";
+import { Scheme, Job, Scholarship, ServiceItem, AppUpdate, CategoryItem } from "../data";
 import { 
   Plus, 
   Trash, 
@@ -15,7 +15,17 @@ import {
   GraduationCap,
   Briefcase,
   Layers,
-  FileCheck
+  FileCheck,
+  Grid,
+  HeartPulse,
+  Laptop,
+  Award,
+  IdCard,
+  MapPin,
+  Globe,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -39,10 +49,15 @@ interface AdminPanelProps {
   onSaveService: (service: ServiceItem) => Promise<void>;
   onDeleteService: (id: string) => Promise<void>;
 
+  categories: CategoryItem[];
+  onSaveCategory: (cat: CategoryItem) => Promise<void>;
+  onDeleteCategory: (id: string) => Promise<void>;
+
   updates: AppUpdate[];
   setUpdates: React.Dispatch<React.SetStateAction<AppUpdate[]>>;
   onClose: () => void;
   triggerPushNotification: (text: string) => void;
+  firebaseStatus?: any;
 }
 
 export default function AdminPanel({
@@ -62,14 +77,40 @@ export default function AdminPanel({
   onCreateService,
   onSaveService,
   onDeleteService,
+  categories,
+  onSaveCategory,
+  onDeleteCategory,
   updates,
   setUpdates,
   onClose,
-  triggerPushNotification
+  triggerPushNotification,
+  firebaseStatus
 }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<"analytics" | "schemes" | "jobs" | "scholarships" | "services" | "updates" | "push">("analytics");
+  const [activeTab, setActiveTab] = useState<
+    | "analytics"
+    | "welfare"
+    | "jobs"
+    | "scholarships"
+    | "identity"
+    | "utility"
+    | "health"
+    | "land"
+    | "cyber_cafe"
+    | "categories"
+  >("analytics");
   const [notificationMsg, setNotificationMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = 240;
+      tabsContainerRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
 
   // 1. Schemes state & editing
   const [editingSchemeId, setEditingSchemeId] = useState<string | null>(null);
@@ -119,9 +160,59 @@ export default function AdminPanel({
   // 6. Push notification
   const [pushBody, setPushBody] = useState("");
 
+  // 4b. Category States
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [catId, setCatId] = useState("");
+  const [catLabel, setCatLabel] = useState("");
+  const [catDesc, setCatDesc] = useState("");
+  const [catIconName, setCatIconName] = useState("Award");
+
+  const cancelCategoryEdit = () => {
+    setEditingCategoryId(null);
+    setCatId("");
+    setCatLabel("");
+    setCatDesc("");
+    setCatIconName("Award");
+  };
+
+  // 7. Click-twice Delete Confirmation State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmType, setDeleteConfirmType] = useState<string | null>(null);
+
   const showNotification = (msg: string) => {
     setNotificationMsg(msg);
     setTimeout(() => setNotificationMsg(""), 3500);
+  };
+
+  // Category CRUD Handlers
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catLabel || !catDesc) {
+      showNotification("সবগুলি ঘর পূরণ করা আবশ্যক!");
+      return;
+    }
+    const activeId = editingCategoryId || catId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (!activeId) {
+      showNotification("সঠিক ইংরেজি ID দিন!");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload: CategoryItem = {
+        id: activeId,
+        label: catLabel.trim(),
+        desc: catDesc.trim(),
+        iconName: catIconName
+      };
+      await onSaveCategory(payload);
+      showNotification(editingCategoryId ? "বিভাগ সফলভাবে সংশোধন করা হয়েছে!" : "নতুন বিভাগ সফলভাবে যুক্ত করা হয়েছে!");
+      cancelCategoryEdit();
+    } catch (err) {
+      console.error(err);
+      showNotification("ত্রুটি ঘটেছে। আবার চেষ্টা করুন।");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Schemes Handlers: add / edit / save / delete
@@ -159,16 +250,7 @@ export default function AdminPanel({
       title: schemeTitle,
       titleEn: schemeTitle,
       category: schemeCategory,
-      categoryName:
-        schemeCategory === "women"
-          ? "মহিলা ও শিশু কল্যাণ"
-          : schemeCategory === "students"
-          ? "শিক্ষার্থী কল্যাণ"
-          : schemeCategory === "farmers"
-          ? "কৃষক কল্যাণ"
-          : schemeCategory === "senior"
-          ? "প্রবীণ ও বয়স্ক কল্যাণ"
-          : "শ্রমিক কল্যাণ",
+      categoryName: categories.find(c => c.id === schemeCategory)?.label || "অন্যান্য কল্যাণ",
       description: schemeDescription || "প্রশাসনিক প্যানেল দ্বারা সংযুক্ত প্রকল্প।",
       benefits: schemeBenefits,
       eligibility: schemeEligibility || "পশ্চিমবঙ্গের উপযুক্ত যোগ্যতাসম্পন্ন স্থায়ী নাগরিক।",
@@ -229,20 +311,7 @@ export default function AdminPanel({
       title: jobTitle,
       subtitle: jobTitle,
       category: jobCategory,
-      categoryName:
-        jobCategory === "wbpsc"
-          ? "WBPSC सरकारी नौकरी"
-          : jobCategory === "police"
-          ? "পুলিশ ও সুরক্ষা বাহিনী"
-          : jobCategory === "railway"
-          ? "রেলওয়ে নিয়োগ বোর্ড"
-          : jobCategory === "banking"
-          ? "ব্যাংকিং ও ফাইনান্স"
-          : jobCategory === "defence"
-          ? "কেন্দ্রীয় সুরক্ষা বাহিনী"
-          : jobCategory === "private"
-          ? "বেসরকারি ও চুক্তিভিত্তিক চাকরি"
-          : "ইন্টার্নশিপ ও প্রশিক্ষণ",
+      categoryName: categories.find(c => c.id === jobCategory)?.label || "অন্যান্য নিয়োগ",
       vacancy: jobVacancy,
       qualification: jobQual || "মাধ্যমিক বা উচ্চমাধ্যমিক পাস।",
       lastDate: jobLastDate || "২০২৬-১২-৩১",
@@ -353,7 +422,7 @@ export default function AdminPanel({
       id: editingServiceId || `srv-admin-${Date.now()}`,
       title: serviceTitle,
       category: serviceCategory,
-      categoryName: serviceCategory === "aadhaar_pan" ? "আধার ও প্যান কার্ড" : "শংসাপত্র ও সার্টিফিকেট",
+      categoryName: categories.find(c => c.id === serviceCategory)?.label || "নাগরিক সেবা",
       description: serviceDescription,
       steps: serviceSteps ? serviceSteps.split("\n").map(s => s.trim()).filter(Boolean) : [
         "অফিসিয়াল সরকারী পোর্টালে ভিজিট করুন।",
@@ -437,76 +506,76 @@ export default function AdminPanel({
       )}
 
       {/* Tabs list */}
-      <div className="flex flex-wrap border-b border-slate-100 bg-slate-50/50">
+      <div className="relative group border-b border-slate-100 bg-slate-50/50 flex items-center">
+        {/* Left scroll button for desktop */}
         <button
-          onClick={() => setActiveTab("analytics")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "analytics"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
+          onClick={() => scrollTabs("left")}
+          className="absolute left-0 top-0 bottom-0 z-10 bg-slate-100/95 hover:bg-slate-200 text-slate-700 w-8 flex items-center justify-center border-r border-slate-200/60 shadow-xs cursor-pointer opacity-70 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
+          title="বামে স্ক্রোল করুন"
         >
-          <PieChart className="h-3.5 w-3.5 inline mr-1" /> সার্বিক অ্যানালিটিক্স
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <button
-          onClick={() => setActiveTab("schemes")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "schemes"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
+
+        <div 
+          ref={tabsContainerRef}
+          className="flex-1 flex items-center overflow-x-auto scrollbar-none whitespace-nowrap select-none px-8 scroll-smooth"
         >
-          <Layers className="h-3.5 w-3.5 inline mr-1" /> স্কিম পরিচালনা ({schemes.length})
-        </button>
+          {[
+            { id: "analytics", label: "সার্বিক অ্যানালিটিক্স", icon: PieChart, count: null },
+            { id: "welfare", label: "সরকারি প্রকল্প", icon: Layers, count: schemes.length },
+            { id: "jobs", label: "সরকারি চাকরি", icon: Briefcase, count: jobs.length },
+            { id: "scholarships", label: "স্কলারশিপ", icon: GraduationCap, count: scholarships.length },
+            { id: "identity", label: "পরিচয় ও কার্ড", icon: FileCheck, count: services.filter(s => s.category === "identity" || s.category === "aadhaar_pan").length },
+            { id: "utility", label: "শংসাপত্র", icon: FileText, count: services.filter(s => s.category === "utility" || s.category === "certificates").length },
+            { id: "health", label: "হেলথ ও বিমা", icon: HeartPulse, count: services.filter(s => s.category === "health").length },
+            { id: "land", label: "জমি ও পরচা", icon: FileCheck, count: services.filter(s => s.category === "land").length },
+            { id: "cyber_cafe", label: "সাইবার ক্যাফে", icon: Laptop, count: services.filter(s => s.category === "cyber_cafe").length },
+            { id: "categories", label: "বিভাগ পরিচালনা", icon: Grid, count: categories.length }
+          ].map((tab) => {
+            const IconComponent = tab.icon;
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  // Also reset active edit forms to prevent confusion across tabs
+                  cancelSchemeEdit();
+                  cancelJobEdit();
+                  cancelScholarshipEdit();
+                  cancelServiceEdit();
+                  cancelCategoryEdit();
+                  if (["identity", "utility", "health", "land", "cyber_cafe"].includes(tab.id)) {
+                    setServiceCategory(tab.id as any);
+                  }
+                }}
+                className={`px-3 md:px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                  isSelected
+                    ? "border-bengali-orange text-[#EA580C] bg-white font-black"
+                    : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <IconComponent className="h-3.5 w-3.5" />
+                <span>{tab.label}</span>
+                {tab.count !== null && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold font-mono ${
+                    isSelected ? "bg-orange-100 text-[#EA580C]" : "bg-slate-200 text-slate-650"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right scroll button for desktop */}
         <button
-          onClick={() => setActiveTab("jobs")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "jobs"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
+          onClick={() => scrollTabs("right")}
+          className="absolute right-0 top-0 bottom-0 z-10 bg-slate-100/95 hover:bg-slate-200 text-slate-700 w-8 flex items-center justify-center border-l border-slate-200/60 shadow-xs cursor-pointer opacity-70 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
+          title="ডানে স্ক্রোল করুন"
         >
-          <Briefcase className="h-3.5 w-3.5 inline mr-1" /> চাকরি পরিচালনা ({jobs.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("scholarships")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "scholarships"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <GraduationCap className="h-3.5 w-3.5 inline mr-1" /> স্কলারশিপ ({scholarships.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("services")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "services"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <FileCheck className="h-3.5 w-3.5 inline mr-1" /> ডিজিটাল সেবা ({services.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("updates")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "updates"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <FileCheck className="h-3.5 w-3.5 inline mr-1" /> নোটিশ আপডেট
-        </button>
-        <button
-          onClick={() => setActiveTab("push")}
-          className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "push"
-              ? "border-bengali-orange text-bengali-orange bg-white"
-              : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <Bell className="h-3.5 w-3.5 inline mr-1" /> পুশ ব্রডকাস্ট
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
@@ -514,6 +583,43 @@ export default function AdminPanel({
         {/* TAB 1: ANALYTICS */}
         {activeTab === "analytics" && (
           <div className="space-y-6">
+            {firebaseStatus && (
+              <div className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                firebaseStatus.connected 
+                  ? "bg-emerald-50/70 border-emerald-100 text-emerald-900" 
+                  : "bg-amber-50/70 border-amber-100 text-amber-900"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <span className="relative flex h-3 w-3">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      firebaseStatus.connected ? "bg-emerald-400" : "bg-amber-400"
+                    }`}></span>
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                      firebaseStatus.connected ? "bg-emerald-500" : "bg-amber-500"
+                    }`}></span>
+                  </span>
+                  <div>
+                    <h4 className="font-bold text-sm">
+                      {firebaseStatus.connected 
+                        ? `ফায়ারবেস ক্লাউড ডেটাবেস সংযুক্ত (${firebaseStatus.usingRTDB ? "Realtime Database" : "Firestore"})` 
+                        : "ফায়ারবেস লোকাল মেমোরি ফলব্যাক মোড"}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {firebaseStatus.connected 
+                        ? `প্রজেক্ট আইডি: ${firebaseStatus.projectId} ${firebaseStatus.databaseURL ? `(${firebaseStatus.databaseURL})` : ""}`
+                        : "কনফিগ ডেটা লোড হয়নি। বর্তমানে এটি লোকাল মেমোরি ফলব্যাক মোডে চলছে।"
+                      }
+                    </p>
+                  </div>
+                </div>
+                {firebaseStatus.connected && (
+                  <span className="bg-emerald-100/75 border border-emerald-200/50 text-emerald-800 text-[10px] font-mono font-bold px-2 py-1 rounded-md self-start md:self-auto select-none">
+                    ● লাইভ সিঙ্কড
+                  </span>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
                 <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block">মোট নাগরিক তথ্য পরিদর্শক</span>
@@ -537,53 +643,65 @@ export default function AdminPanel({
               </div>
             </div>
 
-            {/* Simulated interactive charts */}
-            <div className="bg-slate-50 rounded-xl border border-slate-100 p-6">
-              <h3 className="font-semibold text-slate-800 text-sm mb-4">নাগরিক অনুসন্ধান বিশ্লেষণ (বিভাগভিত্তিক রেশিও)</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-slate-700">লক্ষ্মীর ভাণ্ডার ও মহিলা ও শিশু কল্যাণ সম্পর্কিত অনুসন্ধান</span>
-                    <span className="text-slate-850 text-xs font-black">৪৫%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div className="bg-bengali-orange h-2.5 rounded-full" style={{ width: "45%" }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-slate-700">মাধ্যমিক ও উচ্চ মাধ্যমিক স্তরের স্কলারশিপসমূহ (SVMCM, OASIS)</span>
-                    <span className="text-slate-850 text-xs font-black">২৭%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div className="bg-[#1E3A5F] h-2.5 rounded-full" style={{ width: "27%" }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-slate-700">পশ্চিমবঙ্গ পুলিশ ও WBPSC চাকরির নিয়োগ প্রক্রিয়া</span>
-                    <span className="text-slate-850 text-xs font-black">১৮%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div className="bg-emerald-600 h-2.5 rounded-full" style={{ width: "18%" }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-slate-700">আধার কার্ড বায়োমেট্রিক এবং প্যান পরিষেবা সংক্রান্ত</span>
-                    <span className="text-slate-850 text-xs font-black">১০%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div className="bg-amber-500 h-2.5 rounded-full" style={{ width: "10%" }}></div>
-                  </div>
-                </div>
+            {/* Real-time Category Status Dashboard (Solves user's request to see all dashboard category items in one place) */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+              <div className="bg-slate-55 relative border-b border-slate-200 px-5 py-4">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-400 via-amber-400 to-indigo-500 opacity-90" />
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <Grid className="h-4.5 w-4.5 text-bengali-orange animate-pulse" />
+                  বিভাগ অনুযায়ী সক্রিয় তথ্যের লাইভ অবস্থা ও এনালিটিক্স
+                </h3>
+                <p className="text-[10.5px] text-slate-400 font-semibold mt-0.5">সবগুলো বিভাগের ডেটা সংবলিত সেন্ট্রাল কন্টেন্ট মনিটর</p>
+              </div>
+              <div className="p-4 overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 font-black border-b border-slate-200">
+                      <th className="px-4 py-3">বিভাগের নাম (Department)</th>
+                      <th className="px-4 py-3">সিস্টেম কি (System Key)</th>
+                      <th className="px-4 py-3 text-center">সক্রিয় আইটেম সংখ্যা</th>
+                      <th className="px-4 py-3 text-center">অবস্থা (Status)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150">
+                    {[
+                      { name: "সরকারি প্রকল্প (Welfare)", key: "welfare", count: schemes.length + services.filter(s => s.category === "welfare").length },
+                      { name: "সরকারি চাকরি (Jobs)", key: "jobs", count: jobs.length + services.filter(s => s.category === "jobs").length },
+                      { name: "স্কলারশিপ (Scholarships)", key: "scholarships", count: scholarships.length + services.filter(s => s.category === "scholarships").length },
+                      { name: "পরিচয় ও কার্ড (Identity)", key: "identity", count: services.filter(s => s.category === "identity" || s.category === "aadhaar_pan").length },
+                      { name: "শংসাপত্র (Utility)", key: "utility", count: services.filter(s => s.category === "utility" || s.category === "certificates").length },
+                      { name: "হেলথ ও বিমা (Health)", key: "health", count: services.filter(s => s.category === "health").length },
+                      { name: "জমি ও পরচা (Land)", key: "land", count: services.filter(s => s.category === "land").length },
+                      { name: "সাইবার ক্যাফে (Cyber Cafe)", key: "cyber_cafe", count: services.filter(s => s.category === "cyber_cafe").length }
+                    ].map((cat) => (
+                      <tr key={cat.key} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-4 py-3 font-bold text-slate-800">{cat.name}</td>
+                        <td className="px-4 py-3 font-mono text-slate-450 font-semibold text-[10.5px]">{cat.key}</td>
+                        <td className="px-4 py-3 text-center font-black text-[#A94F12] text-sm font-mono">{cat.count} টি</td>
+                        <td className="px-4 py-3 flex justify-center">
+                          {cat.count > 0 ? (
+                            <span className="inline-flex items-center gap-1.2 bg-emerald-50 border border-emerald-150 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold text-[10px]">
+                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></span>
+                              সক্রিয় ডাটা বর্তমান
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.2 bg-slate-50 border border-slate-200 text-slate-500 px-2.5 py-0.5 rounded-full font-bold text-[10px]">
+                              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                              খালি (তথ্য নেই)
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 2: SCHEME MANAGE */}
-        {activeTab === "schemes" && (
+        {/* TAB 2: WELFARE SCHEME MANAGE */}
+        {activeTab === "welfare" && (
           <div className="space-y-6">
             <form onSubmit={handleSchemeSubmit} className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-1.5 text-sm md:text-base">
@@ -606,14 +724,14 @@ export default function AdminPanel({
                   <label className="text-xs font-bold text-slate-600 block mb-1">বিভাগ বা ক্যাটাগরি *</label>
                   <select
                     value={schemeCategory}
-                    onChange={(e) => setSchemeCategory(e.target.value as Scheme["category"])}
+                    onChange={(e) => setSchemeCategory(e.target.value as any)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
                   >
-                    <option value="women">নারীদের জন্য (মহিলা ও শিশু কল্যাণ)</option>
-                    <option value="students">ছাত্র-ছাত্রীদের জন্য (শিক্ষার্থী কল্যাণ)</option>
-                    <option value="farmers">কৃষক কল্যাণ</option>
-                    <option value="senior">প্রবীণ ও বয়স্ক কল্যাণ</option>
-                    <option value="workers">শ্রমিক ও দিনমজুর কল্যাণ</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label} ({c.id})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -710,16 +828,17 @@ export default function AdminPanel({
             </form>
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
-                    <th className="px-4 py-3">লোগো</th>
-                    <th className="px-4 py-3">নাম</th>
-                    <th className="px-4 py-3">বিভাগ</th>
-                    <th className="px-4 py-3">সুবিধা</th>
-                    <th className="px-4 py-3 text-right">অ্যাকশন</th>
-                  </tr>
-                </thead>
+              <div className="overflow-x-auto scrollbar-none">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
+                      <th className="px-4 py-3">লোগো</th>
+                      <th className="px-4 py-3">নাম</th>
+                      <th className="px-4 py-3">বিভাগ</th>
+                      <th className="px-4 py-3">সুবিধা</th>
+                      <th className="px-4 py-3 text-right">অ্যাকশন</th>
+                    </tr>
+                  </thead>
                 <tbody className="divide-y divide-slate-150 text-xs text-slate-850">
                   {schemes.map((s) => (
                     <tr key={s.id} className="hover:bg-slate-50 transition-colors">
@@ -748,15 +867,32 @@ export default function AdminPanel({
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm("এই প্রকল্পটি মুছে ফেলতে চান?")) {
+                              if (deleteConfirmId === s.id && deleteConfirmType === "scheme") {
                                 onDeleteScheme(s.id);
                                 showNotification("প্রকল্পটি মুছে ফেলা হয়েছে!");
+                                setDeleteConfirmId(null);
+                                setDeleteConfirmType(null);
+                              } else {
+                                setDeleteConfirmId(s.id);
+                                setDeleteConfirmType("scheme");
+                                setTimeout(() => {
+                                  setDeleteConfirmId(null);
+                                  setDeleteConfirmType(null);
+                                }, 5000);
                               }
                             }}
-                            className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer"
-                            title="মুছে ফেলুন"
+                            className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center gap-1 leading-none ${
+                              deleteConfirmId === s.id && deleteConfirmType === "scheme"
+                                ? "bg-red-600 text-[#FFF] text-[10px] font-black px-2 py-1"
+                                : "text-red-500 hover:text-red-700 hover:bg-red-50"
+                            }`}
+                            title={deleteConfirmId === s.id && deleteConfirmType === "scheme" ? "নিশ্চিত করতে পুনরায় ক্লিক করুন" : "মুছে ফেলুন"}
                           >
-                            <Trash className="h-3.5 w-3.5" />
+                            {deleteConfirmId === s.id && deleteConfirmType === "scheme" ? (
+                              "নিশ্চিত?"
+                            ) : (
+                              <Trash className="h-3.5 w-3.5" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -765,6 +901,7 @@ export default function AdminPanel({
                 </tbody>
               </table>
             </div>
+          </div>
           </div>
         )}
 
@@ -792,16 +929,14 @@ export default function AdminPanel({
                   <label className="text-xs font-bold text-slate-600 block mb-1">চাকরির বোর্ড/ক্যাটাগরি *</label>
                   <select
                     value={jobCategory}
-                    onChange={(e) => setJobCategory(e.target.value as Job["category"])}
+                    onChange={(e) => setJobCategory(e.target.value as any)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10"
                   >
-                    <option value="wbpsc">WBPSC সরকারি চাকরি</option>
-                    <option value="police">পুলিশ ও সুরক্ষা বাহিনী</option>
-                    <option value="railway">রেলওয়ে নিয়োগ বোর্ড</option>
-                    <option value="banking">ব্যাংকিং ও ফাইনান্স</option>
-                    <option value="defence">কেন্দ্রীয় সুরক্ষা বাহিনী (Defence)</option>
-                    <option value="private">বেসরকারি ও চুক্তিভিত্তিক চাকরি</option>
-                    <option value="internship">ইন্টার্নশিপ ও প্রশিক্ষণ</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label} ({c.id})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -893,16 +1028,17 @@ export default function AdminPanel({
             </form>
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
-                    <th className="px-4 py-3">লোগো</th>
-                    <th className="px-4 py-3">বিজ্ঞপ্তির বিবরণ</th>
-                    <th className="px-4 py-3">শূন্যপদ</th>
-                    <th className="px-4 py-3">শেষ তারিখ</th>
-                    <th className="px-4 py-3 text-right">অ্যাকশন</th>
-                  </tr>
-                </thead>
+              <div className="overflow-x-auto scrollbar-none">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
+                      <th className="px-4 py-3">লোগো</th>
+                      <th className="px-4 py-3">বিজ্ঞপ্তির বিবরণ</th>
+                      <th className="px-4 py-3">শূন্যপদ</th>
+                      <th className="px-4 py-3">শেষ তারিখ</th>
+                      <th className="px-4 py-3 text-right">অ্যাকশন</th>
+                    </tr>
+                  </thead>
                 <tbody className="divide-y divide-slate-150 text-xs text-slate-800">
                   {jobs.map((j) => (
                     <tr key={j.id} className="hover:bg-slate-50 transition-colors">
@@ -930,15 +1066,32 @@ export default function AdminPanel({
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm("এই চাকরির খবরটি ডিলিট করতে চান?")) {
+                              if (deleteConfirmId === j.id && deleteConfirmType === "job") {
                                 onDeleteJob(j.id);
                                 showNotification("চাকরির খবরটি ডিলিট করা হয়েছে!");
+                                setDeleteConfirmId(null);
+                                setDeleteConfirmType(null);
+                              } else {
+                                setDeleteConfirmId(j.id);
+                                setDeleteConfirmType("job");
+                                setTimeout(() => {
+                                  setDeleteConfirmId(null);
+                                  setDeleteConfirmType(null);
+                                }, 5000);
                               }
                             }}
-                            className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer"
-                            title="মুছে ফেলুন"
+                            className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center gap-1 leading-none ${
+                              deleteConfirmId === j.id && deleteConfirmType === "job"
+                                ? "bg-red-600 text-[#FFF] text-[10px] font-black px-2 py-1"
+                                : "text-red-500 hover:text-red-700 hover:bg-red-50"
+                            }`}
+                            title={deleteConfirmId === j.id && deleteConfirmType === "job" ? "নিশ্চিত করতে পুনরায় ক্লিক করুন" : "মুছে ফেলুন"}
                           >
-                            <Trash className="h-3.5 w-3.5" />
+                            {deleteConfirmId === j.id && deleteConfirmType === "job" ? (
+                              "নিশ্চিত?"
+                            ) : (
+                              <Trash className="h-3.5 w-3.5" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -947,6 +1100,7 @@ export default function AdminPanel({
                 </tbody>
               </table>
             </div>
+          </div>
           </div>
         )}
 
@@ -1062,17 +1216,18 @@ export default function AdminPanel({
             </form>
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
-                    <th className="px-4 py-3">লোগো</th>
-                    <th className="px-4 py-3">স্কলারশিপ নাম</th>
-                    <th className="px-4 py-3">পরিমাণ</th>
-                    <th className="px-4 py-3">যোগ্যতা</th>
-                    <th className="px-4 py-3">শেষ তারিখ</th>
-                    <th className="px-4 py-3 text-right">অ্যাকশন</th>
-                  </tr>
-                </thead>
+              <div className="overflow-x-auto scrollbar-none">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
+                      <th className="px-4 py-3">লোগো</th>
+                      <th className="px-4 py-3">স্কলারশিপ নাম</th>
+                      <th className="px-4 py-3">পরিমাণ</th>
+                      <th className="px-4 py-3">যোগ্যতা</th>
+                      <th className="px-4 py-3">শেষ তারিখ</th>
+                      <th className="px-4 py-3 text-right">অ্যাকশন</th>
+                    </tr>
+                  </thead>
                 <tbody className="divide-y divide-slate-150 text-xs text-slate-800">
                   {scholarships.map((sc) => (
                     <tr key={sc.id} className="hover:bg-slate-50 transition-colors">
@@ -1098,15 +1253,32 @@ export default function AdminPanel({
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm("এই স্কলারশিপ বিবরণ মুছে ফেলতে চান?")) {
+                              if (deleteConfirmId === sc.id && deleteConfirmType === "scholarship") {
                                 onDeleteScholarship(sc.id);
                                 showNotification("স্কলারশিপ মুছে ফেলা হয়েছে!");
+                                setDeleteConfirmId(null);
+                                setDeleteConfirmType(null);
+                              } else {
+                                setDeleteConfirmId(sc.id);
+                                setDeleteConfirmType("scholarship");
+                                setTimeout(() => {
+                                  setDeleteConfirmId(null);
+                                  setDeleteConfirmType(null);
+                                }, 5000);
                               }
                             }}
-                            className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer"
-                            title="মুছে ফেলুন"
+                            className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center gap-1 leading-none ${
+                              deleteConfirmId === sc.id && deleteConfirmType === "scholarship"
+                                ? "bg-red-600 text-[#FFF] text-[10px] font-black px-2 py-1"
+                                : "text-red-500 hover:text-red-700 hover:bg-red-50"
+                            }`}
+                            title={deleteConfirmId === sc.id && deleteConfirmType === "scholarship" ? "নিশ্চিত করতে পুনরায় ক্লিক করুন" : "মুছে ফেলুন"}
                           >
-                            <Trash className="h-3.5 w-3.5" />
+                            {deleteConfirmId === sc.id && deleteConfirmType === "scholarship" ? (
+                              "নিশ্চিত?"
+                            ) : (
+                              <Trash className="h-3.5 w-3.5" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -1116,15 +1288,21 @@ export default function AdminPanel({
               </table>
             </div>
           </div>
+          </div>
         )}
 
-        {/* TAB 5: DIGITAL SERVICES MANAGE */}
-        {activeTab === "services" && (
+        {/* TAB 5: CATEGORIZED DIGITAL SERVICES MANAGE */}
+        {["identity", "utility", "health", "land", "cyber_cafe"].includes(activeTab) && (
           <div className="space-y-6">
             <form onSubmit={handleServiceSubmit} className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-              <h3 className="font-bold text-slate-800 flex items-center gap-1.5 text-sm md:text-base">
-                <PlusCircle className="h-4.5 w-4.5 text-bengali-orange" />
-                {editingServiceId ? "সিটিজেন ডিজিটাল সার্ভিস বিবরণ সংশোধন করুন" : "নতুন জরুরি নাগরিক ডিজিটাল সেবা (Aadhaar, PAN, Voter) গাইড যুক্ত করুন"}
+              <h3 className="font-extrabold text-slate-800 flex items-center gap-1.5 text-sm md:text-base">
+                <PlusCircle className="h-4.5 w-4.5 text-bengali-orange animate-bounce" />
+                {editingServiceId ? "সিটিজেন ডিজিটাল সার্ভিস বিবরণ সংশোধন করুন" : `নতুন "${
+                  activeTab === "identity" ? "পরিচয় ও কার্ড" :
+                  activeTab === "utility" ? "শংসাপত্র ও সার্টিফিকেট" :
+                  activeTab === "health" ? "হেলথ ও বিমা" :
+                  activeTab === "land" ? "জমি ও পরচা" : "সাইবার ক্যাফে"
+                }" গাইড বা সরাসরি লিঙ্ক যুক্ত করুন`}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1142,11 +1320,14 @@ export default function AdminPanel({
                   <label className="text-xs font-bold text-slate-600 block mb-1">সার্ভিস ক্যাটাগরি *</label>
                   <select
                     value={serviceCategory}
-                    onChange={(e) => setServiceCategory(e.target.value as ServiceItem["category"])}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
+                    onChange={(e) => setServiceCategory(e.target.value as any)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange font-bold text-slate-800"
                   >
-                    <option value="aadhaar_pan">আধার ও প্যান কার্ড (Demographics)</option>
-                    <option value="certificates">শংসাপত্র ও সার্টিফিকেট (Birth, Caste, Income, Voter, etc.)</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label} ({c.id})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1219,160 +1400,291 @@ export default function AdminPanel({
             </form>
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
-                    <th className="px-4 py-3">লোগো</th>
-                    <th className="px-4 py-3">পরিষেবার নাম ও ডেসক্রিপশন</th>
-                    <th className="px-4 py-3">ক্যাটাগরি</th>
-                    <th className="px-4 py-3 text-right">অ্যাকশন</th>
-                  </tr>
-                </thead>
+              <div className="overflow-x-auto scrollbar-none">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
+                      <th className="px-4 py-3">লোগো</th>
+                      <th className="px-4 py-3">পরিষেবার নাম ও ডেসক্রিপশন</th>
+                      <th className="px-4 py-3">ক্যাটাগরি</th>
+                      <th className="px-4 py-3 text-right">অ্যাকশন</th>
+                    </tr>
+                  </thead>
                 <tbody className="divide-y divide-slate-150 text-xs text-slate-800">
-                  {services.map((srv) => (
-                    <tr key={srv.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3">
-                        {srv.logoUrl ? (
-                          <img src={srv.logoUrl} className="w-8 h-8 rounded-lg object-cover border border-slate-200 overflow-hidden" referrerPolicy="no-referrer" alt="" />
-                        ) : (
-                          <span className="text-[10px] text-slate-400 font-semibold uppercase font-mono">Default SVG</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{srv.title}</div>
-                        <div className="text-[10.5px] text-slate-450 font-medium truncate max-w-[320px] mt-0.5">{srv.description}</div>
-                      </td>
-                      <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase font-mono">{srv.categoryName || srv.category}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => startEditService(srv)}
-                            className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded hover:bg-indigo-50 transition-colors cursor-pointer"
-                            title="এডিট করুন"
-                          >
-                            <Edit3 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm("এই ডিজিটাল সেবা গাইডটি ডিলিট করতে চান?")) {
-                                onDeleteService(srv.id);
-                                showNotification("ডিজিটাল নাগরিক সেবা বিবরণ টি ডিলিট করা হয়েছে!");
-                              }
-                            }}
-                            className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer"
-                            title="মুছে ফেলুন"
-                          >
-                            <Trash className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                  {services.filter((srv) => {
+                    if (activeTab === "identity") return srv.category === "identity" || srv.category === "aadhaar_pan";
+                    if (activeTab === "utility") return srv.category === "utility" || srv.category === "certificates";
+                    return srv.category === activeTab;
+                  }).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-slate-450 font-bold bg-slate-50/40">
+                        এই বিভাগে বর্তমানে কোনো ডিজিটাল পোর্টাল সেবা নেই। উপরোক্ত ফর্মটি ব্যবহার করে নতুন গাইড যুক্ত করুন।
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    services
+                      .filter((srv) => {
+                        if (activeTab === "identity") return srv.category === "identity" || srv.category === "aadhaar_pan";
+                        if (activeTab === "utility") return srv.category === "utility" || srv.category === "certificates";
+                        return srv.category === activeTab;
+                      })
+                      .map((srv) => (
+                        <tr key={srv.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3">
+                            {srv.logoUrl ? (
+                              <img src={srv.logoUrl} className="w-8 h-8 rounded-lg object-cover border border-slate-200 overflow-hidden" referrerPolicy="no-referrer" alt="" />
+                            ) : (
+                              <span className="text-[10px] text-slate-400 font-semibold uppercase font-mono">Default SVG</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-slate-900">{srv.title}</div>
+                            <div className="text-[10.5px] text-slate-450 font-medium truncate max-w-[320px] mt-0.5">{srv.description}</div>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-800">
+                            {
+                              {
+                                welfare: "সরকারি প্রকল্প",
+                                jobs: "সরকারি চাকরি",
+                                scholarships: "স্কলারশিপ",
+                                identity: "পরিচয় ও কার্ড",
+                                utility: "শংসাপত্র",
+                                health: "হেলথ ও বিমা",
+                                land: "জমি ও পরচা",
+                                cyber_cafe: "সাইবার ক্যাফে"
+                              }[srv.category] || srv.categoryName || srv.category
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => startEditService(srv)}
+                                className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded hover:bg-indigo-50 transition-colors cursor-pointer"
+                                title="এডিট করুন"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (deleteConfirmId === srv.id && deleteConfirmType === "service") {
+                                    onDeleteService(srv.id);
+                                    showNotification("ডিজিটাল নাগরিক সেবা বিবরণ টি ডিলিট করা হয়েছে!");
+                                    setDeleteConfirmId(null);
+                                    setDeleteConfirmType(null);
+                                  } else {
+                                    setDeleteConfirmId(srv.id);
+                                    setDeleteConfirmType("service");
+                                    setTimeout(() => {
+                                      setDeleteConfirmId(null);
+                                      setDeleteConfirmType(null);
+                                    }, 5000);
+                                  }
+                                }}
+                                className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center gap-1 leading-none ${
+                                  deleteConfirmId === srv.id && deleteConfirmType === "service"
+                                    ? "bg-red-600 text-[#FFF] text-[10px] font-black px-2 py-1"
+                                    : "text-red-500 hover:text-red-700 hover:bg-red-50"
+                                }`}
+                                title={deleteConfirmId === srv.id && deleteConfirmType === "service" ? "নিশ্চিত করতে পুনরায় ক্লিক করুন" : "মুছে ফেলুন"}
+                              >
+                                {deleteConfirmId === srv.id && deleteConfirmType === "service" ? (
+                                  "নিশ্চিত?"
+                                ) : (
+                                  <Trash className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
-        )}
-
-        {/* TAB 6: UPDATES MANAGE */}
-        {activeTab === "updates" && (
-          <div className="space-y-6">
-            <form onSubmit={handleAddUpdate} className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-              <h3 className="font-bold text-slate-800 flex items-center gap-1.5 text-xs md:text-sm">
-                <PlusCircle className="h-4 w-4 text-bengali-orange" />
-                নতুন তাৎক্ষণিক আপডেট বা বিজ্ঞপ্তি যোগ করুন
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">আপডেটের বিবরণ (বাংলায়) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={updateTitle}
-                    onChange={(e) => setUpdateTitle(e.target.value)}
-                    placeholder="যেমন: স্টুডেন্ট ক্রেডিট কার্ডের নতুন আবেদনের পোর্টাল খোলা হয়েছে"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">শ্রেণীবিভাগ বা ট্যাগ</label>
-                  <select
-                    value={updateCategory}
-                    onChange={(e) => setUpdateCategory(e.target.value as AppUpdate["category"])}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
-                  >
-                    <option value="General">সাধারণ আপডেট</option>
-                    <option value="Scheme">স্কিম / প্রকল্প সংবাদ</option>
-                    <option value="Job">চাকরির খবর</option>
-                    <option value="Scholarship">স্কলারশিপ অ্যালার্ট</option>
-                  </select>
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="bg-bengali-orange text-white text-xs font-extrabold py-2 px-6 rounded-lg hover:bg-orange-650 transition-colors cursor-pointer"
-              >
-                আপডেট পোস্ট করুন
-              </button>
-            </form>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <h3 className="font-bold text-slate-850 text-xs md:text-sm mb-3">সাম্প্রতিক নোটিশসমূহ</h3>
-              <div className="space-y-1.5">
-                {updates.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 mt-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-full uppercase shrink-0">
-                        {u.category}
-                      </span>
-                      <p className="text-xs text-slate-700 font-bold">{u.title}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[11px] text-slate-400 font-mono font-bold leading-none">{u.date}</span>
-                      <button
-                        onClick={() => handleDeleteUpdate(u.id)}
-                        className="text-red-500 hover:text-red-700 cursor-pointer"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
-        {/* TAB 7: BROADCAST PUSH */}
-        {activeTab === "push" && (
+        {/* TAB 8: CATEGORIES MANAGEMENT */}
+        {activeTab === "categories" && (
           <div className="space-y-6">
-            <form onSubmit={handleDispatchPush} className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-1.5 text-base">
-                <Bell className="h-5 w-5 text-bengali-orange" />
-                নাগরিকদের জন্য ব্রডকাস্ট বিজ্ঞপ্তি (Push Broadcast)
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                এখানে টাইপ করা ঘোষণা বা জরুরি নোটিশটি পোর্টালের সকল সক্রিয় দর্শকদের ওয়েব ব্রাউজারের উপরে তাৎক্ষণিক রিয়েল-টাইম পুশ অ্যালার্ট হিসেবে দৃশ্যমান হবে।
-              </p>
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">বিজ্ঞপ্তির সংক্ষিপ্ত বাক্য *</label>
-                <textarea
-                  required
-                  value={pushBody}
-                  onChange={(e) => setPushBody(e.target.value)}
-                  placeholder="যেমন: জরুরি বার্তা! দুয়ারে সরকার ক্যাম্পের সময়সীমা আগামী ৩০শে জুন পর্যন্ত বাড়ানো হয়েছে।"
-                  rows={3}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Form Column - 5 cols */}
+              <div className="lg:col-span-5 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                <h3 className="font-bold text-slate-800 flex items-center gap-1.5 text-sm md:text-base mb-4">
+                  <Grid className="h-4 w-4 text-bengali-orange" />
+                  {editingCategoryId ? "বিভাগ সংশোধন করুন" : "নতুন বিভাগ যুক্ত করুন"}
+                </h3>
+                
+                <form onSubmit={handleCategorySubmit} className="space-y-4">
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-650 block mb-1">বিভাগ বা ক্যাটাগরি অনন্য ID (যেমন: agri_dept)</label>
+                    <input
+                      type="text"
+                      disabled={!!editingCategoryId}
+                      required
+                      value={catId}
+                      onChange={(e) => setCatId(e.target.value)}
+                      placeholder="ইংরেজি শুধুমাত্র অক্ষর ও আন্ডারস্কোর"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange disabled:opacity-50 disabled:bg-slate-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-extrabold text-[#E96A1F] block mb-1">বাংলা প্রদর্শনীর নাম (যেমন: কৃষি কল্যাণ দপ্তর)</label>
+                    <input
+                      type="text"
+                      required
+                      value={catLabel}
+                      onChange={(e) => setCatLabel(e.target.value)}
+                      placeholder="যেমন: কৃষক ও কৃষি কল্যাণ"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-650 block mb-1">প্রদর্শনীর সংক্ষিপ্ত বর্ণনা (যেমন: খতিয়ান, খাজনা ও সেবা)</label>
+                    <input
+                      type="text"
+                      required
+                      value={catDesc}
+                      onChange={(e) => setCatDesc(e.target.value)}
+                      placeholder="যেমন: সার, বীজ ও বিমা সুবিধা"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-650 block mb-1">বিভাগীয় আইকন নির্বাচন (Icon)</label>
+                    <select
+                      value={catIconName}
+                      onChange={(e) => setCatIconName(e.target.value)}
+                      className="w-full rounded-lg border border-slate-201 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange"
+                    >
+                      <option value="Award">Award (পুরস্কার/প্রকল্প)</option>
+                      <option value="Briefcase">Briefcase (উপকরণ/চাকরি)</option>
+                      <option value="GraduationCap">GraduationCap (শিক্ষা/স্কলারশিপ)</option>
+                      <option value="IdCard">IdCard (কার্ড/পরিচয়)</option>
+                      <option value="FileText">FileText (নথিপত্র/শংসাপত্র)</option>
+                      <option value="HeartPulse">HeartPulse (স্বাস্থ্য/বিমা)</option>
+                      <option value="MapPin">MapPin (ঠিকানা/জমি পরচা)</option>
+                      <option value="Laptop">Laptop (কম্পিউটার/সাইবার ক্যাফে)</option>
+                      <option value="Globe">Globe (ইন্টারনেট/অন্যান্য)</option>
+                      <option value="Layers">Layers (অন্যান্য সেবা)</option>
+                      <option value="Bell">Bell (বিজ্ঞপ্তি)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 bg-bengali-orange hover:bg-orange-600 text-white font-extrabold py-2 px-4 rounded-lg text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer border border-orange-600"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {isSubmitting ? "সংরক্ষিত হচ্ছে..." : editingCategoryId ? "তথ্য আপডেট করুন" : "বিভাগ যুক্ত করুন"}
+                    </button>
+                    {editingCategoryId && (
+                      <button
+                        type="button"
+                        onClick={cancelCategoryEdit}
+                        className="px-3 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 font-bold rounded-lg text-xs cursor-pointer"
+                      >
+                        বাতিল
+                      </button>
+                    )}
+                  </div>
+                </form>
               </div>
-              <button
-                type="submit"
-                className="bg-bengali-orange text-[#FFF] text-xs font-extrabold py-2.5 px-6 rounded-lg hover:bg-orange-600 transition-transform active:scale-95 shadow-sm shadow-orange-500/25 flex items-center gap-1.5 cursor-pointer border border-orange-600"
-              >
-                <Bell className="h-4 w-4" />
-                তাৎক্ষণিক ব্রডকাস্ট করুন
-              </button>
-            </form>
+
+              {/* Display Column - 7 cols */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-700 text-xs">সক্রিয় বিভাগসমূহের বিবরণ তালিকা ({categories.length} টি)</h4>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                  {categories.map((cat) => {
+                    const isDeletingConfirm = deleteConfirmType === "category" && deleteConfirmId === cat.id;
+                    return (
+                      <div key={cat.id} className="bg-white border border-slate-155 rounded-xl p-4 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 rounded-lg bg-orange-50 text-bengali-orange">
+                              {cat.iconName === "Award" && <Award className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "Briefcase" && <Briefcase className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "GraduationCap" && <GraduationCap className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "IdCard" && <IdCard className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "FileText" && <FileText className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "HeartPulse" && <HeartPulse className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "MapPin" && <MapPin className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "Laptop" && <Laptop className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "Globe" && <Globe className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "Layers" && <Layers className="h-4 w-4 text-orange-600" />}
+                              {cat.iconName === "Bell" && <Bell className="h-4 w-4 text-orange-600" />}
+                            </div>
+                            <div>
+                              <h5 className="font-extrabold text-xs text-slate-800 leading-tight">{cat.label}</h5>
+                              <span className="text-[10px] font-mono text-slate-400 font-bold">ID: {cat.id}</span>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-semibold mb-3 leading-relaxed">{cat.desc}</p>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 border-t border-slate-50 pt-2.5">
+                          <button
+                            onClick={() => {
+                              setEditingCategoryId(cat.id);
+                              setCatId(cat.id);
+                              setCatLabel(cat.label);
+                              setCatDesc(cat.desc);
+                              setCatIconName(cat.iconName);
+                            }}
+                            className="p-1 px-2 border border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-100 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            সংশোধন
+                          </button>
+
+                          {isDeletingConfirm ? (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await onDeleteCategory(cat.id);
+                                  showNotification("বিভাগটি সফলভাবে মুছে ফেলা হয়েছে!");
+                                  setDeleteConfirmId(null);
+                                  setDeleteConfirmType(null);
+                                } catch (err) {
+                                  showNotification("মুছে ফেলা সম্ভব হয়নি।");
+                                }
+                              }}
+                              className="px-2 py-1 bg-red-600 border border-red-700 text-white rounded-lg text-[10px] font-black animate-pulse cursor-pointer"
+                            >
+                              নিশ্চিত মুছুন?
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setDeleteConfirmId(cat.id);
+                                setDeleteConfirmType("category");
+                                setTimeout(() => {
+                                  setDeleteConfirmId(null);
+                                  setDeleteConfirmType(null);
+                                }, 3500);
+                              }}
+                              className="p-1 px-2 border border-slate-200 text-slate-450 hover:text-red-500 hover:bg-red-50 hover:border-red-100 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                            >
+                              <Trash className="h-3 w-3" />
+                              মুছুন
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

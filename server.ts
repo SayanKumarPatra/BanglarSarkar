@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import {
-  getSupabaseStatus,
+  getFirebaseStatus,
   getSchemes,
   upsertScheme,
   removeScheme,
@@ -16,8 +16,13 @@ import {
   removeScholarship,
   getServices,
   upsertService,
-  removeService
-} from "./src/lib/supabase-server.js";
+  removeService,
+  getCategories,
+  upsertCategory,
+  removeCategory,
+  getSystemSettings,
+  saveSystemSettings
+} from "./src/lib/firebase-server.js";
 
 // Load environment variables
 dotenv.config();
@@ -27,10 +32,28 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Supabase API Status and Data Routes
+// Firebase Realtime / Firestore connection status endpoint
 app.get("/api/supabase/status", async (req, res) => {
   try {
-    const status = await getSupabaseStatus();
+    const status = await getFirebaseStatus();
+    // Return compatible format
+    res.json({
+      connected: status.connected,
+      tablesExist: status.collectionsExist,
+      hasError: status.hasError,
+      errorMessage: status.errorMessage,
+      isFirebase: true,
+      isFallback: status.isFallback,
+      projectId: status.projectId
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/firebase/status", async (req, res) => {
+  try {
+    const status = await getFirebaseStatus();
     res.json(status);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -133,11 +156,59 @@ app.delete("/api/services/:id", async (req, res) => {
   }
 });
 
-// Initialize Gemini SDK with telemetry header
-const getGeminiClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
+// Categories Endpoints
+app.get("/api/categories", async (req, res) => {
+  try {
+    const data = await getCategories();
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/categories", async (req, res) => {
+  try {
+    await upsertCategory(req.body);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/categories/:id", async (req, res) => {
+  try {
+    await removeCategory(req.params.id);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Settings endpoints
+app.get("/api/settings", async (req, res) => {
+  try {
+    const settings = await getSystemSettings();
+    res.json(settings);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/settings", async (req, res) => {
+  try {
+    await saveSystemSettings(req.body);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Dynamic Gemini Client getter using stored settings falling back to env variable
+const getDynamicGeminiClient = async () => {
+  const settings = await getSystemSettings();
+  const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.warn("Warning: GEMINI_API_KEY is not defined. AI Assistant will use mock responses.");
+    console.warn("Warning: No Gemini API Key defined. AI Assistant will use mock responses.");
     return null;
   }
   return new GoogleGenAI({
@@ -150,8 +221,6 @@ const getGeminiClient = () => {
   });
 };
 
-const ai = getGeminiClient();
-
 // Gemini API chatbot endpoint
 app.post("/api/chat", async (req, res) => {
   try {
@@ -160,16 +229,17 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    if (!ai) {
+    const client = await getDynamicGeminiClient();
+    if (!client) {
       return res.json({
         text: "নমস্কার! বর্তমানে এআই সিস্টেমে কানেকশন সমস্যা হচ্ছে। তবে আমি আপনাকে সাহায্য করতে এখানে আছি। আপনার কি কোনো নির্দিষ্ট সরকারি প্রকল্প বা স্কলারশিপ সম্পর্কে জানতে চান? (যেমন: লক্ষ্মীর ভাণ্ডার, রূপশ্রী, কন্যাশ্রী বা ওয়াসিস স্কলারশিপ)"
       });
     }
 
     const systemInstruction = `
-You are the AI Assistant for "বাংলার সরকার" (Banglar Sarkar), a premium, modern, independent citizen service portal in West Bengal, India. 
+You are the AI Assistant for "বাংলার সেবা" (Banglar Seba), a premium, modern, independent citizen service portal in West Bengal, India. 
 Respond ONLY in clean, polite, helpful, and natural colloquial Bengali. 
-Explain that you are an independent AI helper and "বাংলার সরকার" is an independent public resources portal (NOT an official government website) where information about state/national services, scholarships, certificates, and jobs is aggregated.
+Explain that you are an independent AI helper and "বাংলার সেবা" is an independent public resources portal (NOT an official government website) where information about state/national services, scholarships, certificates, and jobs is aggregated.
 Always gently remind users that actual applications must be completed on official government sites, but you are here to guide them about eligibility, documents required, and direct application links.
 
 Focus on guidelines for West Bengal Schemes:
@@ -184,22 +254,7 @@ Format text clearly with bullet points and bold headers. Keep answers helpful fo
     `;
 
     // Process Gemini chat using the recommended gemini-3.5-flash model
-    const chat = ai.chats.create({
-      model: "gemini-3.5-flash",
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      }
-    });
-
-    // Load pre-existing chat history if any to maintain contest
-    if (history && Array.isArray(history)) {
-      // Re-hydrate the chats if needed. For simplicity we can pass the whole context in contents inside generateContent, 
-      // or build a single text block. Let's build a single session prompt context to ensure maximum responsiveness.
-    }
-
-    // Call SDK to generate response
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
       model: "gemini-3.5-flash",
       contents: message,
       config: {

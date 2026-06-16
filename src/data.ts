@@ -1,3 +1,10 @@
+export interface CategoryItem {
+  id: string;
+  label: string;
+  desc: string;
+  iconName: string;
+}
+
 export interface Scheme {
   id: string;
   title: string;

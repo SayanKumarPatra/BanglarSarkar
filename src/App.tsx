@@ -39,7 +39,11 @@ import {
   Baby,
   IdCard,
   HeartPulse,
-  FileText
+  FileText,
+  Laptop,
+  Eye,
+  EyeOff,
+  Phone
 } from "lucide-react";
 
 import {
@@ -52,8 +56,13 @@ import {
   Job,
   Scholarship,
   ServiceItem,
-  AppUpdate
+  AppUpdate,
+  CategoryItem
 } from "./data";
+
+import { collection, onSnapshot } from "firebase/firestore";
+import { ref as rtdbRef, onValue as onRtdbValue } from "firebase/database";
+import { db, rtdb, isPlaceholderFirebase } from "./lib/firebase";
 
 import AiAssistant from "./components/AiAssistant";
 import AdminPanel from "./components/AdminPanel";
@@ -267,37 +276,429 @@ const renderOfficialLogo = (id: string) => {
   }
 };
 
+const getCategoryIcon = (iconName: string) => {
+  switch (iconName) {
+    case "Award": return Award;
+    case "Briefcase": return Briefcase;
+    case "GraduationCap": return GraduationCap;
+    case "IdCard": return IdCard;
+    case "FileText": return FileText;
+    case "HeartPulse": return HeartPulse;
+    case "MapPin": return MapPin;
+    case "Laptop": return Laptop;
+    case "Globe": return Globe;
+    case "Bell": return Bell;
+    case "Grid": return Grid;
+    default: return Grid;
+  }
+};
+
+const getCategoryStyle = (id: string) => {
+  switch (id) {
+    case "all":
+      return {
+        bgActive: "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-orange-600 shadow-md",
+        bgDefault: "bg-white hover:bg-amber-50/15 text-slate-700 border-slate-200/70 hover:border-amber-305",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-amber-50 text-amber-600",
+      };
+    case "jobs":
+      return {
+        bgActive: "bg-gradient-to-r from-blue-600 to-indigo-650 text-white border-blue-700 shadow-md",
+        bgDefault: "bg-white hover:bg-blue-50/15 text-slate-700 border-slate-200/70 hover:border-blue-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-blue-50 text-blue-600",
+      };
+    case "scholarships":
+      return {
+        bgActive: "bg-gradient-to-r from-emerald-600 to-teal-650 text-white border-emerald-700 shadow-md",
+        bgDefault: "bg-white hover:bg-emerald-50/15 text-slate-700 border-slate-200/70 hover:border-emerald-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-emerald-50 text-emerald-600",
+      };
+    case "welfare":
+      return {
+        bgActive: "bg-gradient-to-r from-orange-500 to-red-650 text-white border-orange-605 shadow-md",
+        bgDefault: "bg-white hover:bg-orange-50/15 text-slate-700 border-slate-200/70 hover:border-orange-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-orange-50 text-bengali-orange",
+      };
+    case "identity":
+      return {
+        bgActive: "bg-gradient-to-r from-violet-600 to-purple-650 text-white border-violet-700 shadow-md",
+        bgDefault: "bg-white hover:bg-violet-50/15 text-slate-700 border-slate-200/70 hover:border-violet-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-violet-50 text-violet-600",
+      };
+    case "utility":
+      return {
+        bgActive: "bg-gradient-to-r from-teal-500 to-cyan-600 text-white border-teal-600 shadow-md",
+        bgDefault: "bg-white hover:bg-teal-50/15 text-slate-700 border-slate-200/70 hover:border-teal-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-teal-50 text-teal-600",
+      };
+    case "health":
+      return {
+        bgActive: "bg-gradient-to-r from-rose-500 to-pink-605 text-white border-rose-600 shadow-md",
+        bgDefault: "bg-white hover:bg-rose-50/15 text-slate-705 border-slate-200/70 hover:border-rose-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-rose-50 text-rose-600",
+      };
+    case "land":
+      return {
+        bgActive: "bg-gradient-to-r from-amber-600 to-[#8D3F0D] text-white border-[#75340A] shadow-md",
+        bgDefault: "bg-white hover:bg-amber-50/15 text-slate-700 border-slate-200/70 hover:border-amber-400",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-amber-50 text-amber-700",
+      };
+    case "cyber_cafe":
+      return {
+        bgActive: "bg-gradient-to-r from-[#A94F12] to-amber-700 text-white border-orange-850 shadow-md",
+        bgDefault: "bg-white hover:bg-orange-50/15 text-slate-700 border-slate-200/70 hover:border-[#A94F12]/40",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-orange-100 text-bengali-orange",
+      };
+    default:
+      return {
+        bgActive: "bg-gradient-to-r from-indigo-500 to-indigo-700 text-white border-indigo-700 shadow-md",
+        bgDefault: "bg-white hover:bg-indigo-50/15 text-slate-700 border-slate-200/70 hover:border-indigo-300",
+        iconBgActive: "bg-white/20 text-white",
+        iconBgDefault: "bg-indigo-50 text-indigo-600",
+      };
+  }
+};
+
 export default function App() {
   // Global States (shared state for instant reactions)
-  const [schemes, setSchemes] = useState<Scheme[]>(INITIAL_SCHEMES);
-  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
+  const [schemes, setSchemes] = useState<Scheme[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [updates, setUpdates] = useState<AppUpdate[]>(INITIAL_UPDATES);
-  const [scholarships, setScholarships] = useState<Scholarship[]>(INITIAL_SCHOLARSHIPS);
-  const [services, setServices] = useState<ServiceItem[]>(SERVICES_DATA);
-  const [supabaseStatus, setSupabaseStatus] = useState<any>(null);
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [firebaseStatus, setFirebaseStatus] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [docCategory, setDocCategory] = useState<string>("all");
+  const [settings, setSettings] = useState<{ geminiApiKey: string }>({ geminiApiKey: "" });
 
-  // Fetch all databases on load
+  const allDashboardItems = useMemo(() => {
+    const list: any[] = [];
+
+    // 1. Schemes -> welfare category
+    if (Array.isArray(schemes)) {
+      schemes.forEach((item) => {
+        list.push({
+          id: item.id,
+          title: item.title,
+          subtitle: item.titleEn || item.categoryName || "সরকারি প্রকল্প",
+          cat: "welfare",
+          badge: item.categoryName || "জনকল্যাণ",
+          btnText: "আবেদন গাইড",
+          description: item.description || `সুবিধা: ${item.benefits || ""} | যোগ্যতা: ${item.eligibility || ""}`,
+          steps: item.documents && item.documents.length > 0
+            ? item.documents.map(d => `প্রয়োজনীয় নথি: ${d}`)
+            : [
+                "দুয়ারে সরকার ক্যাম্প বা পঞ্চায়েত অফিস থেকে ফর্ম সংগ্রহ করুন।",
+                "প্রয়োজনীয় নথি সংযুক্ত করে ফর্মটি সতর্কভাবে পূরণ করুন।",
+                "অনুমোদনের পর সরাসরি ব্যাংক অ্যাকাউন্টে টাকা পাঠানো হবে।"
+              ],
+          officialUrl: item.officialUrl || "https://wb.gov.in",
+          logoUrl: item.logoUrl || ""
+        });
+      });
+    }
+
+    // 2. Jobs -> jobs category
+    if (Array.isArray(jobs)) {
+      jobs.forEach((item) => {
+        list.push({
+          id: item.id,
+          title: item.title,
+          subtitle: item.subtitle || item.categoryName || "নিয়োগ বিজ্ঞপ্তি",
+          cat: "jobs",
+          badge: item.categoryName || "সরকারি চাকরি",
+          btnText: "আবেদন করুন",
+          description: item.description || `শূন্যপদ: ${item.vacancy || "বিজ্ঞপ্তি অনুযায়ী"} | যোগ্যতা: ${item.qualification || "যোগ্যতা দেখুন"} | শেষ তারিখ: ${item.lastDate || "শীঘ্রই আসবে"}`,
+          steps: [
+            "ভারতের অফিসিয়াল রিক্রুটমেন্ট পোর্টালে ভিজিট করুন।",
+            "নতুন নোটিফিকেশন থেকে সঠিক বিজ্ঞপ্তি বেছে নিন।",
+            "ব্যক্তিগত ও শিক্ষাগত যোগ্যতা ফর্মটি ফিলাপ করুন।",
+            "প্রয়োজনীয় ফটো, স্বাক্ষর সাবমিট করে পে স্লিপ এবং ফর্ম প্রিন্ট করুন।"
+          ],
+          officialUrl: item.officialUrl || "https://wb.gov.in",
+          logoUrl: item.logoUrl || ""
+        });
+      });
+    }
+
+    // 3. Scholarships -> scholarships category
+    if (Array.isArray(scholarships)) {
+      scholarships.forEach((item) => {
+        list.push({
+          id: item.id,
+          title: item.title,
+          subtitle: item.amount || "শিক্ষাবৃত্তি অনুদান",
+          cat: "scholarships",
+          badge: "স্কলারশিপ",
+          btnText: "আবেদন গাইড",
+          description: item.description || `পরিমাপ: ${item.amount || ""} | যোগ্যতা: ${item.eligibility || ""} | শেষ তারিখ: ${item.lastDate || ""}`,
+          steps: [
+            "স্কলারশিপের অনলাইন পোর্টালে ভিজিট করুন।",
+            "নতুন নিবন্ধকরণ সম্পন্ন করে আধার ও ব্যাংক লিঙ্ক করুন।",
+            "প্রয়োজনীয় নথিপত্র এবং পূর্ববর্তী মার্কশিট আপলোড করুন।",
+            "চূড়ান্ত কপি প্রতিষ্ঠানে জমা দিয়ে ভেরিফিকেশন করান।"
+          ],
+          officialUrl: item.officialUrl || "https://wb.gov.in",
+          logoUrl: item.logoUrl || ""
+        });
+      });
+    }
+
+    // 4. Services -> identity, utility, health, land categories
+    if (Array.isArray(services)) {
+      services.forEach((item) => {
+        let mappedCat = item.category;
+        if (mappedCat === "aadhaar_pan") {
+          mappedCat = "identity";
+        } else if (mappedCat === "certificates") {
+          mappedCat = "utility";
+        }
+        
+        const existingIdx = list.findIndex((e) => e.id === item.id);
+        if (existingIdx !== -1) {
+          // Merge to enrich with the more detailed steps and fields from services
+          list[existingIdx] = {
+            ...list[existingIdx],
+            steps: item.steps && item.steps.length > 0 ? item.steps : list[existingIdx].steps,
+            description: item.description || list[existingIdx].description,
+            badge: item.badge || list[existingIdx].badge || item.categoryName,
+            btnText: item.btnText || list[existingIdx].btnText,
+            subtitle: item.subtitle || list[existingIdx].subtitle || item.categoryName,
+            logoUrl: item.logoUrl || list[existingIdx].logoUrl || ""
+          };
+        } else {
+          list.push({
+            id: item.id,
+            title: item.title,
+            subtitle: item.subtitle || item.categoryName || "ডিজিটাল সেবা",
+            category: mappedCat,
+            categoryName: item.categoryName || "সেবা",
+            description: item.description || "ডিজিটাল পোর্টাল আবেদন প্রক্রিয়া ও সহায়তা",
+            badge: item.badge || "ডিজিটাল",
+            officialUrl: item.officialUrl || "https://wb.gov.in",
+            btnText: item.btnText || "আবেদন লিংক",
+            steps: item.steps || [],
+            logoUrl: item.logoUrl || ""
+          });
+        }
+      });
+    }
+
+    return list;
+  }, [schemes, jobs, scholarships, services]);
+
+  const displayedItems = useMemo(() => {
+    return allDashboardItems.filter((item) => {
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.subtitle && item.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesCategory =
+        docCategory === "all" ||
+        item.cat === docCategory ||
+        item.category === docCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [allDashboardItems, searchQuery, docCategory]);
+
+  // Fetch and sync all databases in real-time
   useEffect(() => {
-    const loadAllDataAndStatus = async () => {
+    let unsubSchemes = () => {};
+    let unsubJobs = () => {};
+    let unsubScholarships = () => {};
+    let unsubServices = () => {};
+    let unsubCategories = () => {};
+
+    if (!isPlaceholderFirebase) {
       try {
-        const [schemesR, jobsR, scholarshipsR, servicesR, statusR] = await Promise.all([
-          fetch("/api/schemes").then(r => r.json()),
-          fetch("/api/jobs").then(r => r.json()),
-          fetch("/api/scholarships").then(r => r.json()),
-          fetch("/api/services").then(r => r.json()),
-          fetch("/api/supabase/status").then(r => r.json()).catch(() => null)
+        if (rtdb) {
+          unsubSchemes = onRtdbValue(rtdbRef(rtdb, "schemes"), (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+              const list = Array.isArray(val)
+                ? val.filter(Boolean)
+                : Object.keys(val).map((k) => val[k]);
+              if (list.length > 0) setSchemes(list);
+            }
+          }, (err) => {
+            console.warn("Client-side schemes RTDB listener skipped:", err);
+          });
+
+          unsubJobs = onRtdbValue(rtdbRef(rtdb, "jobs"), (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+              const list = Array.isArray(val)
+                ? val.filter(Boolean)
+                : Object.keys(val).map((k) => val[k]);
+              if (list.length > 0) setJobs(list);
+            }
+          }, (err) => {
+            console.warn("Client-side jobs RTDB listener skipped:", err);
+          });
+
+          unsubScholarships = onRtdbValue(rtdbRef(rtdb, "scholarships"), (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+              const list = Array.isArray(val)
+                ? val.filter(Boolean)
+                : Object.keys(val).map((k) => val[k]);
+              if (list.length > 0) setScholarships(list);
+            }
+          }, (err) => {
+            console.warn("Client-side scholarships RTDB listener skipped:", err);
+          });
+
+          unsubServices = onRtdbValue(rtdbRef(rtdb, "services"), (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+              const list = Array.isArray(val)
+                ? val.filter(Boolean)
+                : Object.keys(val).map((k) => val[k]);
+              if (list.length > 0) setServices(list);
+            }
+          }, (err) => {
+            console.warn("Client-side services RTDB listener skipped:", err);
+          });
+
+          unsubCategories = onRtdbValue(rtdbRef(rtdb, "categories"), (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+              const list = Array.isArray(val)
+                ? val.filter(Boolean)
+                : Object.keys(val).map((k) => val[k]);
+              if (list.length > 0) setCategories(list);
+            }
+          }, (err) => {
+            console.warn("Client-side categories RTDB listener skipped:", err);
+          });
+        } else {
+          unsubSchemes = onSnapshot(collection(db, "schemes"), (snapshot) => {
+            const list: Scheme[] = [];
+            snapshot.forEach((doc) => {
+              list.push(doc.data() as Scheme);
+            });
+            if (list.length > 0) {
+              setSchemes(list);
+            }
+          }, (err) => {
+            console.warn("Client-side schemes onSnapshot listener skipped:", err);
+          });
+
+          unsubJobs = onSnapshot(collection(db, "jobs"), (snapshot) => {
+            const list: Job[] = [];
+            snapshot.forEach((doc) => {
+              list.push(doc.data() as Job);
+            });
+            if (list.length > 0) {
+              setJobs(list);
+            }
+          }, (err) => {
+            console.warn("Client-side jobs onSnapshot listener skipped:", err);
+          });
+
+          unsubScholarships = onSnapshot(collection(db, "scholarships"), (snapshot) => {
+            const list: Scholarship[] = [];
+            snapshot.forEach((doc) => {
+              list.push(doc.data() as Scholarship);
+            });
+            if (list.length > 0) {
+              setScholarships(list);
+            }
+          }, (err) => {
+            console.warn("Client-side scholarships onSnapshot listener skipped:", err);
+          });
+
+          unsubServices = onSnapshot(collection(db, "services"), (snapshot) => {
+            const list: ServiceItem[] = [];
+            snapshot.forEach((doc) => {
+              list.push(doc.data() as ServiceItem);
+            });
+            if (list.length > 0) {
+              setServices(list);
+            }
+          }, (err) => {
+            console.warn("Client-side services onSnapshot listener skipped:", err);
+          });
+
+          unsubCategories = onSnapshot(collection(db, "categories"), (snapshot) => {
+            const list: CategoryItem[] = [];
+            snapshot.forEach((doc) => {
+              list.push(doc.data() as CategoryItem);
+            });
+            if (list.length > 0) {
+              setCategories(list);
+            }
+          }, (err) => {
+            console.warn("Client-side categories onSnapshot listener skipped:", err);
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to attach client-side real-time listeners:", err);
+      }
+    }
+
+    // Load initial status, settings, and REST-based data as fallback/complements
+    const loadAllStatusAndFallback = async () => {
+      try {
+        const [statusR, settingsR] = await Promise.all([
+          fetch("/api/firebase/status").then(r => r.json()).catch(() => null),
+          fetch("/api/settings").then(r => r.json()).catch(() => ({ geminiApiKey: "" }))
         ]);
 
-        if (Array.isArray(schemesR)) setSchemes(schemesR);
-        if (Array.isArray(jobsR)) setJobs(jobsR);
-        if (Array.isArray(scholarshipsR)) setScholarships(scholarshipsR);
-        if (Array.isArray(servicesR)) setServices(servicesR);
-        if (statusR) setSupabaseStatus(statusR);
+        if (statusR) setFirebaseStatus(statusR);
+        if (settingsR) setSettings(settingsR);
+
+        // Fetch fallback REST data if onSnapshot has not initialized data yet
+        const schemesR = await fetch("/api/schemes").then(r => r.json()).catch(() => []);
+        if (Array.isArray(schemesR) && schemesR.length > 0) {
+          setSchemes((prev) => prev.length === 0 ? schemesR : prev);
+        }
+
+        const jobsR = await fetch("/api/jobs").then(r => r.json()).catch(() => []);
+        if (Array.isArray(jobsR) && jobsR.length > 0) {
+          setJobs((prev) => prev.length === 0 ? jobsR : prev);
+        }
+
+        const scholarshipsR = await fetch("/api/scholarships").then(r => r.json()).catch(() => []);
+        if (Array.isArray(scholarshipsR) && scholarshipsR.length > 0) {
+          setScholarships((prev) => prev.length === 0 ? scholarshipsR : prev);
+        }
+
+        const servicesR = await fetch("/api/services").then(r => r.json()).catch(() => []);
+        if (Array.isArray(servicesR) && servicesR.length > 0) {
+          setServices((prev) => prev.length === 0 ? servicesR : prev);
+        }
+
+        const categoriesR = await fetch("/api/categories").then(r => r.json()).catch(() => []);
+        if (Array.isArray(categoriesR) && categoriesR.length > 0) {
+          setCategories((prev) => prev.length === 0 ? categoriesR : prev);
+        }
       } catch (err) {
-        console.error("Failed to fetch initial application data:", err);
+        console.error("Failed to load initial settings / fallback data:", err);
       }
     };
-    loadAllDataAndStatus();
+
+    loadAllStatusAndFallback();
+
+    return () => {
+      unsubSchemes();
+      unsubJobs();
+      unsubScholarships();
+      unsubServices();
+      unsubCategories();
+    };
   }, []);
 
   const handleCreateScheme = async (scheme: Scheme) => {
@@ -432,8 +833,56 @@ export default function App() {
     }
   };
 
+  const handleSaveCategory = async (cat: CategoryItem) => {
+    try {
+      await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cat)
+      });
+      setCategories((prev) => {
+        const idx = prev.findIndex((c) => c.id === cat.id);
+        if (idx !== -1) {
+          const copy = [...prev];
+          copy[idx] = cat;
+          return copy;
+        } else {
+          return [cat, ...prev];
+        }
+      });
+    } catch (err) {
+      console.error("Error saving category:", err);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await fetch(`/api/categories/${id}`, { method: "DELETE" });
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      console.error("Error deleting category:", err);
+    }
+  };
+
+  const handleSaveSettings = async (newSettings: { geminiApiKey: string }) => {
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newSettings),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSettings(newSettings);
+        return true;
+      }
+    } catch (err) {
+      console.error("Error saving settings:", err);
+    }
+    return false;
+  };
+
   // Filter and Search States
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeSchemeTab, setActiveSchemeTab] = useState<"all" | "women" | "students" | "farmers" | "senior" | "workers">("all");
   const [activeJobTab, setActiveJobTab] = useState<"all" | "wbpsc" | "police" | "railway" | "banking" | "defence" | "private" | "internship">("all");
 
@@ -450,6 +899,7 @@ export default function App() {
   const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
   const [adminPasswordInput, setAdminPasswordInput] = useState("");
   const [adminPasswordError, setAdminPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAdminPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -470,7 +920,7 @@ export default function App() {
 
   // Simulation Alert/Push Notifications State
   const [broadcastNotices, setBroadcastNotices] = useState<string[]>([
-    "স্বাগতম! বাবাংলার সেবা নাগরিক সেবা পোর্টালে পশ্চিমবঙ্গ রাজ্য সরকারের সমস্ত সামাজিক প্রকল্প, নিয়োগ এবং বৃত্তি সংক্রান্ত নির্ভরযোগ্য তথ্য বাংলায় পাবেন।"
+    "স্বাগতম! বাংলার সেবা নাগরিক সেবা পোর্টালে পশ্চিমবঙ্গ রাজ্য সরকারের সমস্ত সামাজিক প্রকল্প, নিয়োগ এবং বৃত্তি সংক্রান্ত নির্ভরযোগ্য তথ্য বাংলায় পাবেন।"
   ]);
 
   // Subscription Alerts (WhatsApp & Telegram signup)
@@ -483,7 +933,6 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("হোম");
   const [showMoreServicesModal, setShowMoreServicesModal] = useState(false);
-  const [docCategory, setDocCategory] = useState<"all" | "identity" | "utility" | "health" | "jobs" | "scholarships" | "welfare" | "land">("all");
   const [activeLegalModal, setActiveLegalModal] = useState<"terms" | "disclaimer" | "privacy" | null>(null);
 
   // Bookmark toggler helpers
@@ -553,9 +1002,9 @@ export default function App() {
     <div className="relative min-h-screen flex flex-col bg-[#F9FBFC] text-slate-800 transition-all duration-300 text-sm">
       
       {/* 1. TOP BROADCAST ALERT BAND (Persistent Info) */}
-      <div className="bg-gradient-to-r from-[#A94F12] to-[#E96A1F] text-white py-1.5 px-4 shadow-inner text-center text-xs md:text-sm font-semibold flex items-center justify-center gap-2 relative z-50">
+      <div className="bg-gradient-to-r from-[#A94F12] to-[#E96A1F] text-white py-2 px-4 shadow-inner text-center text-xs md:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 relative z-50">
         <span className="bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase leading-none shrink-0 tracking-wider animate-pulse">আজকের বিজ্ঞপ্তি</span>
-        <p className="truncate">পশ্চিমবঙ্গ নতুন জনকল্যাণ প্রকল্প, নিয়োগ বিজ্ঞপ্তি ও স্কলারশিপের সর্বশেষ নির্ভরযোগ্য তথ্য জানতে এআই সহায়তা চ্যাট ব্যবহার করুন।</p>
+        <p className="whitespace-normal break-words leading-relaxed text-slate-50">পশ্চিমবঙ্গ নতুন জনকল্যাণ প্রকল্প, নিয়োগ বিজ্ঞপ্তি ও স্কলারশিপের সর্বশেষ নির্ভরযোগ্য তথ্য জানতে এআই সহায়তা চ্যাট ব্যবহার করুন।</p>
       </div>
 
       {/* 2. TOP METADATA & ACCESSIBILITY WIDGETS BAR */}
@@ -593,7 +1042,7 @@ export default function App() {
           </button>
         </div>
       </div>
-      <header className="bg-white py-3.5 px-4 md:px-8 border-b border-orange-100/50 flex flex-col md:flex-row items-center justify-between gap-3 relative select-none">
+      <header className="bg-white py-4 px-4 md:px-8 border-b border-orange-100/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative select-none">
         {/* Left Side: Brand Name & Double Tagline aligned cleanly to the left margins */}
         <div className="w-full md:w-auto">
           <div>
@@ -603,15 +1052,43 @@ export default function App() {
               </h1>
               <span className="bg-[#E96A1F]/10 text-[#A94F12] text-[9px] font-extrabold px-1.5 py-0.5 rounded">নাগরিক গাইড</span>
             </div>
-            {/* Tagline 1 */}        
-            <p className="text-[11px] text-slate-800 font-semibold leading-normal mt-1.5">
+            {/* Tagline 1 */}
+            <p className="text-[11px] text-slate-800 font-semibold leading-normal mt-1.5 font-sans">
               আপনার সেবা, আপনার তথ্য, এক প্ল্যাটফর্মে (বেসরকারি উদ্যোগ)
             </p>
             {/* Tagline 2 */}
-            <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5">
+            <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5 font-sans">
               পশ্চিমবঙ্গ রাজ্য সামাজিক সুরক্ষা ও জনকল্যাণ প্রকল্প নির্দেশিকা
             </p>
           </div>
+        </div>
+
+        {/* Right Side: Contact Hub (WhatsApp & Direct Phone Call) */}
+        <div className="flex flex-row items-center gap-2 w-full md:w-auto justify-stretch md:justify-end">
+          <a
+            href="https://wa.me/919382040746"
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs border border-emerald-600 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer font-sans text-center"
+          >
+            {/* Custom SVG WhatsApp Icon */}
+            <svg 
+              className="h-4 w-4 fill-current shrink-0" 
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.458 5.704 1.459h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413" />
+            </svg>
+            <span>হোয়াটসঅ্যাপ</span>
+          </a>
+
+          <a
+            href="tel:9382040746"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-[#E96A1F] hover:bg-[#A94F12] active:bg-[#8D3F0D] text-white font-extrabold text-xs rounded-xl shadow-xs border border-orange-600 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer font-sans text-center"
+          >
+            <Phone className="h-3.8 w-3.8 shrink-0" />
+            <span>সরাসরি কল</span>
+          </a>
         </div>
       </header>
 
@@ -624,6 +1101,7 @@ export default function App() {
             {[
               { label: "হোম", href: "#hero" },
               { label: "অফিসিয়াল ওয়েবসাইট", href: "#services" },
+              { label: "সাইবার ক্যাফে", href: "#cyber-cafe" },
               { label: "সাহায্য ও সহায়তা", href: "#help" }
             ].map((item, idx) => {
               const isActive = activeNav === item.label;
@@ -645,6 +1123,12 @@ export default function App() {
                       } else if (item.label === "অফিসিয়াল ওয়েবসাইট") {
                         e.preventDefault();
                         document.getElementById("services-anchor")?.scrollIntoView({ behavior: "smooth" });
+                      } else if (item.label === "সাইবার ক্যাফে") {
+                        e.preventDefault();
+                        setDocCategory("cyber_cafe");
+                        setTimeout(() => {
+                          document.getElementById("digital-document-hub-section")?.scrollIntoView({ behavior: "smooth" });
+                        }, 50);
                       }
                     }}
                     className={`inline-flex items-center px-4.5 py-3 text-xs font-bold uppercase transition-all tracking-wide relative group cursor-pointer ${
@@ -670,7 +1154,8 @@ export default function App() {
             <div className="flex items-center whitespace-nowrap overflow-x-auto scrollbar-none">
               {[
                 { label: "হোম", target: "hero" },
-                { label: "অফিসিয়াল ওয়েবসাইট", target: "services" }
+                { label: "অফিসিয়াল ওয়েবসাইট", target: "services" },
+                { label: "সাইবার ক্যাফে", target: "cyber_cafe" }
               ].map((item, idx) => {
                 const isItemActive = activeNav === item.label;
                 return (
@@ -685,6 +1170,11 @@ export default function App() {
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       } else if (item.target === "services") {
                         document.getElementById("services-anchor")?.scrollIntoView({ behavior: "smooth" });
+                      } else if (item.target === "cyber_cafe") {
+                        setDocCategory("cyber_cafe");
+                        setTimeout(() => {
+                          document.getElementById("digital-document-hub-section")?.scrollIntoView({ behavior: "smooth" });
+                        }, 50);
                       }
                     }}
                     className={`px-3 py-2.5 text-xs font-bold transition-all relative cursor-pointer ${
@@ -748,16 +1238,20 @@ export default function App() {
               onCreateService={handleCreateService}
               onSaveService={handleSaveService}
               onDeleteService={handleDeleteService}
+              categories={categories}
+              onSaveCategory={handleSaveCategory}
+              onDeleteCategory={handleDeleteCategory}
               updates={updates}
               setUpdates={setUpdates}
               onClose={() => setIsAdminOpen(false)}
               triggerPushNotification={triggerPushBroadcast}
+              firebaseStatus={firebaseStatus}
             />
           </div>
         ) : (
           <>
             {/* 1. SEAMLESS COMPACT SEARCH HERO (Lightened, modern light-orange-cream gradient) */}
-            <div className="w-full bg-gradient-to-b from-amber-50/75 to-[#FFF8F4] py-14 px-4 md:px-8 border-b border-orange-100/70 select-none relative overflow-hidden">
+            <div className="w-full bg-gradient-to-b from-amber-50/75 to-[#FFF8F4] py-8 md:py-14 px-4 md:px-8 border-b border-orange-100/70 select-none relative overflow-hidden">
               {/* Subtle background abstract shapes */}
               <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
               <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full blur-2xl -ml-20 -mb-20 pointer-events-none"></div>
@@ -797,114 +1291,42 @@ export default function App() {
                   <p className="text-[10px] md:text-xs text-slate-400 font-bold tracking-widest uppercase mb-3.5 text-center">
                     সরাসরি প্রয়োজনীয় ডকুমেন্টস বা সরকারি কার্ড বিভাগে এগিয়ে যান
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 px-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-2 px-1">
                     {[
                       {
                         id: "all",
                         label: "সব নথি ও কার্ড",
-                        desc: "৩১+ সরকারি সেবা",
-                        icon: Grid,
-                        bgActive: "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-orange-600 shadow-md",
-                        bgDefault: "bg-white hover:bg-amber-50/15 text-slate-700 border-slate-200/70 hover:border-amber-305",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-amber-50 text-amber-600",
+                        desc: `${allDashboardItems.length}+ সরকারি সেবা`,
+                        iconName: "Grid",
                       },
-                      {
-                        id: "jobs",
-                        label: "সরকারি চাকরি",
-                        desc: "PSC, পুলিশ ও নিয়োগ",
-                        icon: Briefcase,
-                        bgActive: "bg-gradient-to-r from-blue-600 to-indigo-650 text-white border-blue-700 shadow-md",
-                        bgDefault: "bg-white hover:bg-blue-50/15 text-slate-700 border-slate-200/70 hover:border-blue-300",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-blue-50 text-blue-600",
-                      },
-                      {
-                        id: "scholarships",
-                        label: "স্কলারশিপ",
-                        desc: "SVMCM ও অনুদান",
-                        icon: GraduationCap,
-                        bgActive: "bg-gradient-to-r from-emerald-600 to-teal-650 text-white border-emerald-700 shadow-md",
-                        bgDefault: "bg-white hover:bg-emerald-50/15 text-slate-700 border-slate-200/70 hover:border-emerald-300",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-emerald-50 text-emerald-600",
-                      },
-                      {
-                        id: "welfare",
-                        label: "সরকারি প্রকল্প",
-                        desc: "লক্ষ্মীর ভাণ্ডার ও সেবা",
-                        icon: Award,
-                        bgActive: "bg-gradient-to-r from-orange-500 to-red-600 text-white border-orange-600 shadow-md",
-                        bgDefault: "bg-white hover:bg-orange-50/15 text-slate-700 border-slate-200/70 hover:border-orange-300",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-orange-50 text-bengali-orange",
-                      },
-                      {
-                        id: "identity",
-                        label: "পরিচয় ও কার্ড",
-                        desc: "আধার, ভোটার ও রেশন",
-                        icon: IdCard,
-                        bgActive: "bg-gradient-to-r from-violet-600 to-purple-650 text-white border-violet-700 shadow-md",
-                        bgDefault: "bg-white hover:bg-violet-50/15 text-slate-700 border-slate-200/70 hover:border-violet-300",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-violet-50 text-violet-600",
-                      },
-                      {
-                        id: "utility",
-                        label: "শংসাপত্র",
-                        desc: "জন্ম, জাতি ও সার্টিফিকেট",
-                        icon: FileText,
-                        bgActive: "bg-gradient-to-r from-teal-500 to-cyan-600 text-white border-teal-600 shadow-md",
-                        bgDefault: "bg-white hover:bg-teal-50/15 text-slate-700 border-slate-200/70 hover:border-teal-300",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-teal-50 text-teal-600",
-                      },
-                      {
-                        id: "health",
-                        label: "হেলথ ও বিমা",
-                        desc: "স্বাস্থ্য সাথী ও ABHA",
-                        icon: HeartPulse,
-                        bgActive: "bg-gradient-to-r from-rose-500 to-pink-605 text-white border-rose-600 shadow-md",
-                        bgDefault: "bg-white hover:bg-rose-50/15 text-slate-700 border-slate-200/70 hover:border-rose-300",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-rose-50 text-rose-600",
-                      },
-                      {
-                        id: "land",
-                        label: "জমি ও পরচা",
-                        desc: "বাংলারভূমি ও খাজনা",
-                        icon: MapPin,
-                        bgActive: "bg-gradient-to-r from-amber-600 to-[#8D3F0D] text-white border-[#75340A] shadow-md",
-                        bgDefault: "bg-white hover:bg-amber-50/15 text-slate-700 border-slate-200/70 hover:border-amber-400",
-                        iconBgActive: "bg-white/20 text-white",
-                        iconBgDefault: "bg-amber-50 text-amber-700",
-                      },
+                      ...categories
                     ].map((cat) => {
-                      const IconComponent = cat.icon;
+                      const IconComponent = getCategoryIcon(cat.iconName);
+                      const styles = getCategoryStyle(cat.id);
                       const isActive = docCategory === cat.id;
                       return (
                         <button
                           key={cat.id}
                           onClick={() => {
-                            setDocCategory(cat.id as any);
+                            setDocCategory(cat.id);
                             setTimeout(() => {
                               document.getElementById("digital-document-hub-section")?.scrollIntoView({ behavior: "smooth" });
                             }, 50);
                           }}
-                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-left transition-all duration-200 transform scale-100 hover:scale-[1.01] active:scale-95 cursor-pointer relative overflow-hidden group ${
-                            isActive ? cat.bgActive : cat.bgDefault
+                          className={`flex items-center gap-2 px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl border text-left transition-all duration-200 transform scale-100 hover:scale-[1.01] active:scale-95 cursor-pointer relative overflow-hidden group w-full md:w-auto md:min-w-[140px] md:max-w-[190px] ${
+                            isActive ? styles.bgActive : styles.bgDefault
                           }`}
                         >
-                          <div className={`p-1.5 rounded-lg transition-all ${
-                            isActive ? cat.iconBgActive : cat.iconBgDefault
+                          <div className={`p-1.5 rounded-lg transition-all shrink-0 ${
+                            isActive ? styles.iconBgActive : styles.iconBgDefault
                           }`}>
                             <IconComponent className="h-3.8 w-3.8 shrink-0" />
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="font-extrabold text-[11px] leading-tight truncate">
+                            <span className="font-extrabold text-[11px] leading-tight whitespace-normal break-words line-clamp-2">
                               {cat.label}
                             </span>
-                            <span className={`text-[8.5px] font-semibold mt-0.5 truncate leading-none ${isActive ? "text-white/85" : "text-slate-400"}`}>
+                            <span className={`text-[8.5px] font-semibold mt-0.5 line-clamp-1 leading-none ${isActive ? "text-white/85" : "text-slate-400"}`}>
                               {cat.desc}
                             </span>
                           </div>
@@ -927,20 +1349,10 @@ export default function App() {
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-black text-base md:text-lg text-slate-800 tracking-tight">বাংলার সরকারের সমস্ত অফিসিয়াল ওয়েবসাইট</h3>
+                        <h3 className="font-black text-base md:text-lg text-slate-800 tracking-tight">বাংলার সেবার সমস্ত অফিসিয়াল ওয়েবসাইট</h3>
                         {docCategory !== "all" && (
                           <span className="px-2 py-0.5 text-[10px] md:text-xs bg-orange-100 text-bengali-orange border border-orange-200/50 rounded-lg font-bold animate-fade-in">
-                            {
-                              {
-                                jobs: "সরকারি চাকরি",
-                                scholarships: "স্কলারশিপ",
-                                welfare: "সরকারি প্রকল্প",
-                                identity: "পরিচয় ও কার্ড",
-                                utility: "শংসাপত্র",
-                                health: "হেলথ ও বিমা",
-                                land: "জমি ও পরচা"
-                              }[docCategory]
-                            }
+                            {categories.find((c) => c.id === docCategory)?.label || docCategory}
                           </span>
                         )}
                       </div>
@@ -951,130 +1363,98 @@ export default function App() {
 
                 {/* Compact side-by-side cards grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
-                  {[
-                    // West Bengal Cards & Core Documents (identity)
-                    { id: "srv1", title: "আধার কার্ড", subtitle: "Aadhaar Card", cat: "identity", badge: "UIDAI", btnText: "আধার সেবা", description: "আধার কার্ড ভারতীয় নাগরিকদের অন্যতম প্রধান পরিচয়পত্র। নতুন কার্ড আবেদন বা বায়োমেট্রিক ও নাম ঠিকানা আপডেট করার অফিসিয়াল সেবা পোর্টাল।", steps: ["'My Aadhaar' পোর্টালে ভিজিট করুন।", "আধার কেন্দ্র অ্যাপয়েন্টমেন্ট বুকিং সম্পন্ন করুন বা বায়োমেট্রিক স্লট বেছে নিন।", "প্রয়োজনীয় নথি যেমন পরিচয় ও ঠিকানার প্রমাণপত্র নিয়ে কেন্দ্রে যান।", "বাচ্চাদের ক্ষেত্রে ৫ ও ১৫ বছর বয়সে বাধ্যতামুলক বায়োমেট্রিক আপডেট করান।"], officialUrl: "https://uidai.gov.in/" },
-                    { id: "srv2", title: "প্যান কার্ড", subtitle: "PAN Card Registration", cat: "identity", badge: "Income Tax", btnText: "প্যান সেবা", description: "ব্যাংকিং ও ট্যাক্স লেনদেনের জন্য ই-প্যান বা ফিজিক্যাল প্যান কার্ড নতুন আবেদন বা বিবরণী সংশোধন প্রসেস পোর্টাল।", steps: ["অনলাইন NSDL/UTIITSL প্যান পোর্টালে ফর্ম ৪৯এ (Form 49A) সিলেক্ট করুন।", "আপনার সঠিক আধার কার্ড অনুযায়ী নাম, জন্মতারিখ ও পিতা লিখুন।", "আধার ওটিপির মাধ্যমে ই-কেওয়াইসি সম্পন্ন করুন সম্পূর্ণ ডিজিটাল পদ্ধতিতে।", "ডিজিটাল প্যান কয়েক ঘণ্টার মধ্যেই ইমেইলে চলে আসবে, ফিজিক্যাল কার্ড পোস্ট অফ থ্রু আসবে।"], officialUrl: "https://www.onlineservices.nsdl.com/paam/endUserRegisterContact.html" },
-                    { id: "srv7", title: "ভোটার কার্ড", subtitle: "Voter Card / e-EPIC", cat: "identity", badge: "ECI India", btnText: "ভোটার পোর্টাল", description: "জাতীয় ভোটার সেবা পোর্টালে নতুন ভোটার নাম নথিভুক্তকরণ, নাম সংশোধন বা ডিজিটাল ভোটার কার্ড ডাউনলোড প্রসেস।", steps: ["ভারতের নির্বাচন কমিশন ভোটার সার্ভিস পোর্টালে (voters.eci.gov.in) সাইন ইন করুন।", "নতুন ভোটারের জন্য ফর্ম-৬ বা সংশোধনের জন্য ফর্ম-৮ পূরণ করুন।", "বয়স ও ঠিকানার প্রমাণপত্র স্ক্যান করে আপলোড করুন।", "অনুমোদনের পর বিএলও আপনার বাড়িতে গিয়ে ডিজিটাল ভোটার কার্ড ডেলিভারি করে দেবে।"], officialUrl: "https://voters.eci.gov.in/" },
-                    { id: "srv8", title: "রেশন কার্ড", subtitle: "Ration Card (Khadya)", cat: "identity", badge: "Khadya Sathi", btnText: "খাদ্যসাথী", description: "পশ্চিমবঙ্গ খাদ্য ও সরবরাহ মন্ত্রকের অধীনে ডিজিটাল রেশন কার্ড স্ট্যাটাস, মোবাইল লিঙ্কিং ও দোকান বদলের পোর্টাল।", steps: ["খাদ্য দপ্তরের অফিসিয়াল পোর্টালে গিয়ে 'Citizen Card Status' ট্যাব খুলুন।", "আধার কার্ড সংযুক্ত করতে 'Link Aadhaar with Ration Card' নির্বাচন করুন।", "ওটিপি দিয়ে মেম্বার ট্রান্সফার বা নতুন সদস্যের আবেদন সম্পূর্ণ করুন।", "প্রয়োজনে ই-রেশন কার্ড ডাউনলোড করে তৎক্ষণাৎ চাল-গম তুলুন বিনা মূল্যে।"], officialUrl: "https://food.wb.gov.in/" },
-                    { id: "srv9", title: "পাসপোর্ট", subtitle: "Passport Services", cat: "identity", badge: "Govt of India", btnText: "পাসপোর্ট পোর্টাল", description: "সহজ পদ্ধতিতে অনলাইন পোর্টালের মাধ্যমে নতুন পাসপোর্ট আবেদন ও নিকটবর্তী পাসপোর্ট সেবা কেন্দ্রে অ্যাপয়েন্টমেন্ট বুকিং গাইড।", steps: ["ভারতের পাসপোর্ট সেবা পোর্টালে নতুন ইউজার রেজিস্ট্রেশন করুন।", "Fresh Passport ফর্ম পূরণ করে ব্যক্তিগত ও ঠিকানার বিবরণ খতিয়ে জমা দিন।", "অ্যাপয়েন্টমেন্ট স্লট পছন্দ করে অনলাইন পেমেন্ট সম্পন্ন করুন।", "রিসিভ কপি নিয়ে পাসপোর্ট অফিসে ডকুমেন্ট স্ক্রিনিং করান ও পুলিশ ভেরিফিকেশন ফেস করুন।"], officialUrl: "https://www.passportindia.gov.in/" },
-                    { id: "srv10", title: "ড্রাইভিং লাইসেন্স", subtitle: "Driving License", cat: "identity", badge: "Sarathi PM", btnText: "পরিবহন লাইসেন্স", description: "লার্নার্স লাইসেন্স টেস্ট এবং স্থায়ী ড্রাইভিং লাইসেন্স অ্যাপয়েন্টমেন্ট প্রক্রিয়া সম্পন্ন করুন সম্পূর্ণ ডিজিটালভাবে আরটিও বা আরটিআই সেবায়।", steps: ["সারথি পরিবহন সেবা পোর্টালে গিয়ে রাজ্য 'West Bengal' সিলেক্ট করুন।", "'Apply for Learner's Licence' ক্লিক করে আধার ই-কেওয়াইসি সম্পন্ন করুন।", "ঘরে বসেই অনলাইনে লার্নার টেস্ট দিয়ে শংসাপত্র ডাউনলোড করুন।", "স্থায়ী লাইসেন্সের জন্য RTO ড্রাইভিং ট্রায়াল বুক করুন ও পাস করলেই কার্ড পান।"], officialUrl: "https://sarathi.parivahan.gov.in/" },
-                    
-                    // West Bengal Certificates (utility)
-                    { id: "srv3", title: "জন্ম শংসাপত্র", subtitle: "Birth Certificate", cat: "utility", badge: "Govt of WB", btnText: "জন্ম তথ্য", description: "পশ্চিমবঙ্গে জন্মগ্রহণকারী শিশুদের বা পুরোনো নাগরিকদের জন্য ডিজিটালভাবে বার্থ সার্টিফিকেট ডিরেক্ট আবেদন ও ডাউনলোডের পোর্টাল।", steps: ["'জন্ম-মৃত্যু তথ্য' পোর্টাল (janma-mrityutathya.wb.gov.in) ভিজিট করুন।", "সিটিজেন ট্যাব থেকে 'Birth' এবং 'Apply for New Application' ক্লিক করুন।", "শিশুর জন্ম ও হাসপাতাল রিলিজ স্লিপের স্ক্যান কপি আপলোড করুন।", "অ্যাপ্রুভ হওয়ার পর একই পোর্টাল থেকে ডিজিটাল শংসাপত্র ডাউনলোড করুন।"], officialUrl: "https://janma-mrityutathya.wb.gov.in/" },
-                    { id: "srv4", title: "জাতিগত শংসাপত্র", subtitle: "Caste Certificate", cat: "utility", badge: "Kalyan Dept", btnText: "কাস্ট সার্টিফিকেট", description: "পশ্চিমবঙ্গে তপশিলি জাতি (SC), উপজাতি (ST) এবং OBC শংসাপত্র পাওয়ার ব্যাকওয়ার্ড ক্লাসেস উন্নয়ন দপ্তরের পোর্টাল।", steps: ["ব্যাকওয়ার্ড ডেস্কে অ্যাপ্লিকেশন লিঙ্কে ক্লিক করে ফর্ম খুলুন।", "আবেদনকারীর শিক্ষাগত বিবরণ ও রক্তের সম্পর্কযুক্ত আত্মীয়ের কাস্ট কার্ডের বিবরণ দিন।", "ঠিকানা ও জাতি প্রমাণের স্বঘোষণাপত্র বা প্রধানের শংসাপত্র আপলোড করুন।", "SDO/BDO অফিসে হেয়ারিং শেষে সার্টিফিকেট ডিজিটালভাবে ডাউনলোড বা সংগ্রহ করুন।"], officialUrl: "http://casterepresentationwb.gov.in/" },
-                    { id: "srv5", title: "আয় শংসাপত্র", subtitle: "Income Certificate", cat: "utility", badge: "e-District", btnText: "ইনকাম গাইড", description: "স্কলারশিপের মেধা বা ঋণের জন্য পশ্চিমবঙ্গ ই-ডিস্ট্রিক্ট পোর্টাল ২.০ এর মাধ্যমে বিডিও (BDO) দ্বারা অনুমোদিত আয় শংসাপত্রের পোর্টাল।", steps: ["পশ্চিমবঙ্গ ই-ডিস্ট্রিক্ট পোর্টালে নিজের নাগরিক আইডি দিয়ে লগইন করুন।", "সার্ভিস লিস্ট থেকে 'Income Certificate' বিকল্প বেছে নিন।", "আবেদনকারীর আয়ের বিবরণী ও স্থানীয় প্রধান/মিউনিসিপ্যালিটি প্যাড আপলোড করুন।", "বিডিও ই-সাইন করার পর ৩ দিনের মাথায় ডিজিটাল বারকোড শংসাপত্র ডাউনলোড করুন।"], officialUrl: "https://edistrict.wb.gov.in/" },
-                    { id: "srv11", title: "মৃত্যু শংসাপত্র", subtitle: "Death Certificate", cat: "utility", badge: "Govt of WB", btnText: "ডেথ রেকর্ড", description: "পশ্চিমবঙ্গ সরকারের জন্ম-মৃত্যু তথ্য পোর্টাল ব্যবহার করে মৃত ব্যক্তির ডেথ সার্টিফিকেটের অনলাইন আবেদন ও ভেরিফিকেশন।", steps: ["'জন্ম-মৃত্যু তথ্য' পোর্টাল ওপেন করুন ও সিটিজেন সেকশন নির্বাচন করুন।", "'Death' সেগমেন্ট থেকে নতুন ডিজিটাল ডেথ রেজিস্ট্রি ফর্ম ফিল আপ করুন।", "হাসপাতাল বা শবদাহ প্রমাণের নথি আপলোড করুন।", "ডিজিটাল ভেরিফায়েড সই যুক্ত শংসাপত্র ফ্রিতে ডাউনলোড করুন।"], officialUrl: "https://janma-mrityutathya.wb.gov.in/" },
-                    
-                    // West Bengal Government Jobs & Exams (jobs)
-                    { id: "job_psc", title: "WBPSC ক্লার্টশিপ ও বিবিধ", subtitle: "PSC Clerkship, Miscellaneous", cat: "jobs", badge: "WBPSC", btnText: "পিএসসি পোর্টাল", description: "পশ্চিমবঙ্গ পাবলিক সার্ভিস কমিশন দ্বারা গ্রুপ-সি, গ্রুপ-ডি, মিউনিসিপ্যাল, ক্লার্কশিপ ও সিভিল সার্ভিস নিয়োগ সংক্রান্ত অফিসিয়াল পোর্টাল।", steps: ["অফিসিয়াল WBPSC পোর্টালে (psc.wb.gov.in) ভিজিট করুন।", "নতুন ওটিআর (One Time Registration) সম্পন্ন করুন অথবা পুরোনো আইডি দিয়ে লগইন করুন।", "অ্যাক্টিভ নোটিফিকেশন থেকে ক্লাকশিপ বা ফুড এসআই বা মিসলেনিয়াস সিলেক্ট করে অ্যাপ্লিকেশন ফর্ম ফিলাপ করুন।", "নির্ভুলভাবে ছবি, স্বাক্ষর ও প্রামাণ্য নথিপত্র আপলোড করে সাবমিট করুন ও ফর্ম ডাউনলোড করুন।"], officialUrl: "https://psc.wb.gov.in" },
-                    { id: "job_police", title: "পশ্চিমবঙ্গ পুলিশ কনস্টেবল", subtitle: "WBP Constable Recruit", cat: "jobs", badge: "WBPB", btnText: "পুলিশ নিয়োগ", description: "পশ্চিমবঙ্গ পুলিশ রিক্রুটমেন্ট বোর্ড দ্বারা কনস্টেবল এবং সাব-ইন্সপেক্টর পদে সরাসরি পুরুষ এবং মহিলা প্রার্থী নিয়োগ আবেদন।", steps: ["পশ্চিমবঙ্গ পুলিশ রিক্রুটমেন্ট বোর্ড (prb.wb.gov.in) অফিশিয়াল ওয়েবপেজটি খুলুন।", "চলতি রিক্রুটমেন্ট ট্যাবে 'Apply Online' বাটনে ক্লিক করুন।", "ব্যক্তিগত তথ্য, শিক্ষাগত যোগ্যতা এবং পছন্দের পরীক্ষার জেলা সিলেক্ট করুন।", "পাসপোর্ট সাইজ রঙিন ছবি এবং স্বাক্ষর স্ক্যান করে আপলোড করুন ও সাবমিট করুন।"], officialUrl: "https://prb.wb.gov.in" },
-                    { id: "job_tet", title: "WB Primary TET ও শিক্ষকতা", subtitle: "Primary Teacher Eligibility Test", cat: "jobs", badge: "WBBPE", btnText: "টেট আবেদন", description: "পশ্চিমবঙ্গ প্রাথমিক শিক্ষা পর্ষদ দ্বারা প্রাথমিকে শিক্ষক নিয়োগ সংক্রান্ত টেট শংসাপত্র ও সরাসরি বিজ্ঞপ্তির ফর্ম ফিলআপ।", steps: ["প্রাথমিক শিক্ষা পর্ষদের অফিশিয়াল সাইট (wbbprimaryeducation.org) খুলুন।", "'TET Query & Application' ট্যাবে গিয়ে আপনার মোবাইল ও আধার বিবরণ দিয়ে সাইন ইন করুন।", "আপনার শিক্ষকতার প্রশিক্ষণ (D.El.Ed / B.Ed) ও শিক্ষাগত শংসাপত্র কপি আপলোড করুন।", "আবেদন ফি অনলাইনে পেমেন্ট করে চূড়ান্ত ক্যানডিডেট কপি সংগ্রহে রাখুন।"], officialUrl: "https://www.wbbprimaryeducation.org" },
-                    { id: "job_ssc", title: "WB School Service Commission", subtitle: "Assistant Teacher & Group C/D", cat: "jobs", badge: "WBSSC", btnText: "এসএসসি পোর্টাল", description: "পশ্চিমবঙ্গ স্কুল সার্ভিস কমিশন দ্বারা রানিং স্কুলের মাধ্যমিক ও উচ্চ মাধ্যমিক স্তরে শিক্ষক ও শিক্ষাকর্মী নতুন নিয়োগ প্রক্রিয়ার পোর্টাল।", steps: ["স্কুল সার্ভিস কমিশন (westbengalssc.com) পোর্টাল খুলুন।", "নতুন নিয়োগ আবেদনের অনলাইন লিংকে ক্লিক করুন বা অ্যাডভার্টাইজ তালিকা বাছুন।", "রোল নম্বর ও রেজিস্ট্রেশন দিয়ে লগইন করে নির্দেশাবলী অনুযায়ী ফর্ম ফিলাপ করুন।", "আবেদন ফি সাবমিট করে চূড়ান্ত ডিক্লারেশন সাবমিট করে পৃষ্ঠা প্রিন্ট করে রাখুন।"], officialUrl: "http://www.westbengalssc.com" },
-                    { id: "job_msc", title: "মিউনিসিপ্যাল কর্পোরেশন চাকরি", subtitle: "Municipal Service Recruit", cat: "jobs", badge: "MSCWB", btnText: "পৌরসভা চাকরি", description: "কলকাতা পৌরনিগম ও রাজ্যের বিভিন্ন পৌরসভায় সাব-অ্যাসিস্ট্যান্ট ইঞ্জিনিয়ার, ক্লার্ক ও গ্রুপ-ডি পদের সরাসরি নিয়োগের তথ্য।", steps: ["পৌর নিয়োগ বোর্ড (mscwb.org) সাইটটি খুলুন।", "নতুন অ্যাকাউন্ট নিবন্ধন সম্পন্ন করে 'Apply online for active advertisements' ক্লিক করুন।", "আপনার শিক্ষাগত যোগ্যতা ও কাজের অভিজ্ঞতা সঠিক তথ্য দিয়ে ড্রাফট করুন ও নথিপত্র আপলোড করুন।", "অনলাইন নেট ব্যাংকিং বা ইউপিআই দিয়ে আবেদন ফি জমা করে পে স্লিপ এবং ফর্মটি ডাউনলোড করুন।"], officialUrl: "https://www.mscwb.org" },
-                    { id: "job_health", title: "স্বাস্থ্য দপ্তর কর্মী নিয়োগ", subtitle: "WB Health Recruitment Board", cat: "jobs", badge: "WBHRB", btnText: "স্বাস্থ্য নিয়োগ", description: "পশ্চিমবঙ্গ স্বাস্থ্য ও পরিবার কল্যাণ দপ্তরের অধীনে ডাক্তার, স্টাফ নার্স, মেডিকেল টেকনিশিয়ান পদে সরাসরি বিজ্ঞপ্তির আবেদন পদ্ধতি।", steps: ["স্বাস্থ্য নিয়োগ বোর্ড (hrb.wb.gov.in) পোর্টালে ভিজিট করুন।", "ইমেইল ও মোবাইল দিয়ে পোর্টাল রেজিস্ট্রেশন সম্পন্ন করুন ও ওটিপি ভেরিফাই করুন।", "আপনার নার্সিং কাউন্সিল বা ওয়েস্ট বেঙ্গল ডেন্টাল কাউন্সিল সার্টিফিকেশন এবং শিক্ষাগত মার্কশিট আপলোড করুন।", "সব তথ্য পুনরায় ভেরিফাই করে অনলাইন সার্ভারে সাবমিট করুন ও প্রিন্টআউট নিন।"], officialUrl: "https://www.hrb.wb.gov.in" },
-                    
-                    // Student Scholarships (scholarships)
-                    { id: "sc_svmcm", title: "স্বামী বিবেকানন্দ স্কলারশিপ", subtitle: "SVMCM Merit Scholarship", cat: "scholarships", badge: "WBHED", btnText: "SVMCM পোর্টাল", description: "মেধাবী শিক্ষার্থীদের জন্য পশ্চিমবঙ্গ উচ্চশিক্ষা দপ্তরের বাৎসরিক ১২,০০০ থেকে ৯৬,০০০ টাকার স্কলারশিপের ফর্ম ফিলাপ পোর্টাল।", steps: ["স্বামী বিবেকানন্দ পোর্টাল (svmcm.wbhed.gov.in) ওপেন করুন।", "Fresh Application ট্যাবে গিয়ে আধার ও সর্বশেষ বোর্ড পরীক্ষার মার্কশিট আপলোড করুন (৬০% নম্বর আবশ্যক)।", "পারিবারিক বার্ষিক আয়ের ঘোষণা ও ব্যাংক পাসবই কপি স্ক্যান করুন।", "প্রতিষ্ঠানের আইডি দিয়ে ভেরিফাই সম্পন্ন হলে সরাসরি ব্যাংক অ্যাকাউন্টে টাকা ঢুকবে।"], officialUrl: "https://svmcm.wbhed.gov.in/" },
-                    { id: "sc_oasis", title: "ওএসিস কাস্ট স্কলারশিপ", subtitle: "OASIS SC/ST/OBC Relief", cat: "scholarships", badge: "BCW Dept", btnText: "ওএসিস পোর্টাল", description: "তপশিলি জাতি, উপজাতি এবং অনগ্রসর ছাত্রছাত্রীদের জন্য বাৎসরিক পোস্ট-মেট্রিক স্কলারশিপের ডিজিটাল আবেদন।", steps: ["ওএসিস অফিসিয়াল স্কলারশিপ পোর্টাল (oasis.gov.in) ওপেন করে 'Student Registration' করুন।", "আপনার জেলা ও কাস্ট সার্টিফিকেটের নম্বর দিয়ে প্রোফাইল রেজিস্টার করুন।", "ইনস্টিটিউট প্রোফাইল ও কোর্স বিবরণ পূরণ করে আবেদন প্রিন্টআউট নিন।", "প্রিন্টআউট ও প্রয়োজনীয় প্রশংসাপত্র প্রতিষ্ঠানে ভেরিফিকেশনের জন্য জমা দিন।"], officialUrl: "https://oasis.gov.in/" },
-                    { id: "sc_aikyashree", title: "ঐক্যশ্রী সংখ্যালঘু স্কলারশিপ", subtitle: "Aikyashree Minorities", cat: "scholarships", badge: "WBMDFC", btnText: "ঐক্যশ্রী পোর্টাল", description: "পশ্চিমবঙ্গের সংখ্যালঘু মুসলিম, শিখ, খ্রিস্টান, বৌদ্ধ ছাত্রছাত্রীদের জন্য ঐক্যশ্রী যোজনার অধীনে স্কলারশিপ পোর্টাল।", steps: ["WBMDFC স্কলারশিপ ওয়েবসাইটটিতে গিয়ে 'Minority Scholarship' সিলেক্ট করুন।", "শিক্ষা স্তর প্রাক-মেট্রিক বা পোস্ট-মেট্রিক অনুযায়ী ফর্ম সাবমিশন প্রক্রিয়া শুরু করুন।", "ব্যাংক একাউন্ট ডিটেলস ও আধার নম্বর ভেরিফাই করুন।", "ইনস্টিটিউট লগইন ভেরিফাই করার পর আপনার একাউন্টে ডিরেক্ট টাকা পাঠানো হবে।"], officialUrl: "https://wbmdfcscholarship.org/" },
-                    { id: "sc_nabanna", title: "নবান্ন মুখ্যমন্ত্রী ত্রাণ তহবিল", subtitle: "Chief Minister's Relief Fund", cat: "scholarships", badge: "WB Govt", btnText: "নবান্ন আবেদন", description: "পশ্চিমবঙ্গ সরকারের মুখ্যমন্ত্রী ত্রাণ তহবিল থেকে মেধাবী অসচ্ছল ছাত্রছাত্রীদের এককালীন ১০,০০০ টাকার আর্থিক সাহায্য।", steps: ["মুখ্যমন্ত্রী সচিবালয় বা নবান্ন অফিসিয়াল অ্যাপ্লিকেশনে 'Apply for Financial Assistance for Education' এ যান।", "আপনার পরিবারের বাৎসরিক আয়ের প্রশংসাপত্র ও বিধায়ক বা মন্ত্রীর রেকমেন্ডেশন লেটার আপলোড করুন।", "নিজের ও অভিভাবকের আধার কার্ড সহ সর্বশেষ মার্কশিট সংযুক্ত করুন।", "অফিসিয়াল হার্ডকপি সরাসরি নবান্ন বা উত্তরণ ডেস্কে ব্যক্তিগত বা কুরিয়ারে জমা করতে হয়।"], officialUrl: "https://wbcmo.gov.in" },
-                    
-                    // Social Welfare Schemes (welfare)
-                    { id: "s_lakshmir", title: "লক্ষ্মীর ভাণ্ডার প্রকল্প", subtitle: "Lakshmir Bhandar WB", cat: "welfare", badge: "WCD&SW", btnText: "লক্ষ্মীর ভাণ্ডার", description: "পশ্চিমবঙ্গ সরকারের অন্যতম জনপ্রিয় সামাজিক প্রকল্প যা উপার্জনকারী নারীদের প্রতি মাসে ১০০০ বা ১২০০ টাকা নগদ সাহায্য দিয়ে স্বাবলম্বী করে।", steps: ["দুয়ারে সরকার ক্যাম্প বা পঞ্চায়েত অফিস থেকে কুপন সংবলিত ইউনিক ফর্ম সংগ্রহ করুন।", "স্বাস্থ্য সাথী কার্ড, আধার কার্ড ও ব্যাংক পাসবুক জেরক্স দিয়ে ফর্মটি সুন্দরভাবে পূরণ করুন।", "বিডিও বা ক্যাম্প ভেরিফিকেশন অফিসারকে ফর্ম এবং নথি জমা করে প্রাপ্তি রসিদ (Acknowledgement) লিন।", "অনুমোদনের পর প্রতি মাসের ১-১০ তারিখের মধ্যে টাকা সরাসরি ব্যাংক একাউন্টে ঢুকে যাবে।"], officialUrl: "https://socialsecurity.wb.gov.in/" },
-                    { id: "s_krishak", title: "কৃষক বন্ধু (নতুন) প্রকল্প", subtitle: "Krishak Bandhu Financial Aid", cat: "welfare", badge: "Krishi Dept", btnText: "কৃষক বন্ধু", description: "পশ্চিমবঙ্গের কৃষকদের চাষাবাদের আর্থিক সাহায্য এবং ২ লক্ষ টাকার জীবন বিমা কভারেজ প্রদান করার কৃষি প্রকল্প।", steps: ["নিকটবর্তী কৃষি অধিকর্তা (ADAI) বা দুয়ারে সরকার ক্যাম্পে গিয়ে ফর্ম সংগ্রহ করুন।", "জমির বর্তমান পর্চা (খতিয়ান রেকর্ড), আধার, ভোটার ও ব্যাংক পাসবুক জেরক্স সংযুক্ত করুন।", "কৃষি আধিকারিক দ্বারা আপনার তথ্য নিবন্ধিত ও স্যাংশন সম্পন্ন করুন।", "খরিফ ও রবি মরশুমের পূর্বে দুটি কিস্তিতে টাকা অ্যাকাউন্টে জমা হবে।"], officialUrl: "https://krishakbandhu.wb.gov.in/" },
-                    { id: "s_kanyashree", title: "কন্যাশ্রী প্রকল্প (K1/K2)", subtitle: "Kanyashree Girl Support", cat: "welfare", badge: "WB Govt", btnText: "কন্যাশ্রী", description: "বাল্যবিবাহ রোখার উদ্দেশ্যে শিক্ষাপ্রতিষ্ঠানে পড়ুয়া ১৩-১৮ বছর মেয়েদের বাৎসরিক এবং ১৮ বছরে এককালীন ২৫,০০০ টাকার প্রকল্প।", steps: ["আপনার পড়তে থাকা বিদ্যালয় বা কলেজ অফিস থেকে কন্যাশ্রী ফর্ম এবং আইডি নম্বর সংগ্রহ করুন।", "ছাত্রীর নিজস্ব সিঙ্গেল ব্যাংক সেভিংস অ্যাকাউন্টের পাসবুক এবং আধার কার্ড ফটোকপি সংযুক্ত করুন।", "অবিবাহিত থাকার স্বঘোষণাপত্র ও অভিভাবকের স্বাক্ষর সহ স্কুলে ফর্মটি জমা করুন।", "স্কুল প্রধান ফর্মটি অনলাইনে ভেরিফাই করলেই আপনার টাকা বরাদ্দ হবে।"], officialUrl: "https://www.wbkanyashree.gov.in/" },
-                    { id: "s_rupashree", title: "রূপশ্রী বিবাহের অনুদান", subtitle: "Rupashree Marriage Grant", cat: "welfare", badge: "Social Welfare", btnText: "রূপশ্রী গাইড", description: "দরিদ্র পরিবারের মেয়েদের বিয়ের খরচ মেটাতে পশ্চিমবঙ্গ সরকারের ২৫,০০০ টাকার এককালীন বিয়ের আগে আর্থিক সাহায্য।", steps: ["বিয়ের প্রস্তাবিত তারিখের ন্যূনতম ৩০ দিন আগে স্থানীয় বিডিও বা মিউনিসিপালিটি অফিসে ফর্ম জমা করতে হবে।", "মেয়ের বয়স ১৮+ ও বরের বয়স ২১+ প্রমাণপত্র (মাধ্যমিক অ্যাডমিট/বার্থ সার্টিফিকেট) জেরক্স যোগ করুন।", "বিয়ের কার্ড, প্রস্তাবিত বিয়ের স্থান প্রমাণ ও পারিবারিক আয়ের স্বঘোষণাপত্র দিন।", "যাচাইকরণ সফল হলে বিয়ের অন্তত ৫ দিন পূর্বে মেয়ের নিজস্ব ব্যাংক অ্যাকাউন্টে ২৫,০০০ টাকা ঢুকে যাবে।"], officialUrl: "https://www.wbrupashree.gov.in/" },
-                    { id: "s_ssy", title: "সামাজিক সুরক্ষা যোজনা (BM-SSY)", subtitle: "Bina Mulya Samajik Suraksha", cat: "welfare", badge: "Labour Dept", btnText: "সামাজিক সুরক্ষা", description: "অসংগঠিত ক্ষেত্রের শ্রমিক, রিকশাচালক ও দিনমজুরদের ভবিষ্যৎ ক্যাশলেস চিকিৎসা এবং দুর্ঘটনা পেনশনের রাজ্য প্রকল্প।", steps: ["শ্রমিক কল্যাণ দপ্তরের পোর্টালে (bmssy.wblabour.gov.in) ভিজিট করুন।", "আপনার ভোটার কার্ড, আধার, রেশন কার্ড ও পেশাগত নামের স্বঘোষণা পত্র নিয়ে রেজিস্ট্রেশন করুন।", "নমিনিদের বিবরণ এবং একটি সচল ব্যাংক পাসবুকের ফ্রন্ট পেজের কপি আপলোড করুন।", "মিউনিসিপ্যালিটি বা পঞ্চায়েতের অনুমোদনের পর লেবার ওয়েলফেয়ার থেকে ই-কার্ড বা বই পেয়ে যাবেন।"], officialUrl: "https://bmssy.wblabour.gov.in/" },
-                    
-                    // West Bengal Land Records (land)
-                    { id: "land_record", title: "বাংলারভূমি পরচা ও খতিয়ান", subtitle: "Banglarbhumi Land Records", cat: "land", badge: "L&LR Dept", btnText: "বাংলারভূমি", description: "পশ্চিমবঙ্গ সরকারের ভূমি ও ভূমি সংস্কার দপ্তরের মাধ্যমে অনলাইনে রেকর্ড অফ রাইট বা খতিয়ান পরচা এবং আরএস-এলআর মাপ দেখা।", steps: ["বাংলারভূমি অফিসিয়াল পোর্টাল (banglarbhumi.gov.in) এ গিয়ে 'Know Your Property' খুলুন।", "আপনার সংশ্লিষ্ট জেলা, ব্লক এবং মৌজা সঠিক খতিয়ান নং বা দাগ নং দিয়ে সার্চ করুন।", "ক্যাপচা কোড এন্টার করে মুহূর্তেই পরচা ও জমির মিউটেশন বিবরণ দেখে নিন।", "সার্টিফায়েড ডিজিটাল কপি ডাউনলোড করতে আইডি ক্রিয়েট করে ন্যূনতম ফি পে করুন।"], officialUrl: "https://banglarbhumi.gov.in/" },
-                    { id: "land_deed", title: "দলিল পঞ্জীকরণ ও রেজিস্ট্রেশন", subtitle: "Search & Register Deed", cat: "land", badge: "Registration", btnText: "দলিল রেজিস্ট্রি", description: "জমির ফিজিক্যাল দলিলের মার্কেট ভ্যালু চেক এবং অনলাইনে ই-দলিল খোজা বা নতুন দলিল খসড়া তৈরি করা পোর্টাল।", steps: ["ডাইরেক্টরেট অফ রেজিস্ট্রেশন সার্ভিস (wbregistration.gov.in) পোর্টাল ওপেন করুন।", "'Market Value of Land' এ দাগ ও খতিয়ান দিয়ে জমির বর্তমান বাজারমূল্য জেনে নিন।", "নতুন ক্রয়ের ক্ষেত্রে ই-দলিল খসড়া সাবমিট করে স্ট্যাম্প ডিউটি হিসেব করতে পারেন।", "সম্পন্ন দলিলের সার্টিফায়েড অনুলিপি দেখতে 'Search Your Deed' অপশনে গিয়ে ক্রেতা/বিক্রেতার নাম দিন।"], officialUrl: "https://wbregistration.gov.in/" },
-                    { id: "land_mutation", title: "মিউটেশন ও কনভার্সন", subtitle: "Mutation & Conversion", cat: "land", badge: "L&LR Portal", btnText: "মিউটেশন গাইড", description: "ক্রয়কৃত জমির নাম সংশোধন বা রেকর্ড নিজের নামের করার জন্য অনলাইন মিউটেশন বা জমির শ্রেণী বদল (শ্রেণী পরিবর্তন)।", steps: ["বাংলারভূমি পোর্টালে নিজের ইউজার রেজিস্টার সম্পন্ন করে Citizen Services এ যান।", "'Online Application' ট্যাব থেকে 'Mutation Application' সিলেক্ট করে ফর্ম পূরণ করুন।", "রেজিস্টার ডিড (দলিল কপি), বিক্রেতার পর্চা এবং সেল ডিডের প্রথম ৭ পাতার কপি আপলোড করুন।", "অনলাইনে প্রসেস চার্জ পেমেন্ট সম্পন্ন করে হেয়ারিং এর নোটিশের জন্য অপেক্ষা করুন ও বিএলআরও অফিসে জমা দিন।"], officialUrl: "https://banglarbhumi.gov.in/" },
-                    { id: "land_revenue", title: "খাজনা ও অনলাইন ল্যান্ড ট্যাক্স", subtitle: "Land Revenue (Khajna)", cat: "land", badge: "WB Revenue", btnText: "অনলাইন খাজনা", description: "পশ্চিমবঙ্গে কৃষিজমি বা ডাঙ্গা জমির বার্ষিক ল্যান্ড রেভিনিউ বা খাজনা অনলাইনে জমা করে কিস্তিবন্ডী টিকিট বা রসিদ পাওয়া।", steps: ["বাংলারভূমি পোর্টালে নাগরিক লগইন সম্পন্ন করে 'Land Revenue Application' ক্লিক করুন।", "আপনার জমির বিবরণ ও পূর্ববর্তী খাজনার শেষ বছরের রসিদের তথ্য ইনপুট করুন।", "বকেয়া হিসেব দেখার পর আপনার মোবাইল নম্বরে ওটিপি দিয়ে কনফার্ম করুন।", "নেট ব্যাংকিং বা জিআরআইপিএস (GRIPS) দিয়ে অনলাইন খাজনা পে করে তৎক্ষণাৎ খাজনা দাখিলা ডাউনলোড করুন।"], officialUrl: "https://banglarbhumi.gov.in/" },
-                    
-                    // West Bengal Digital Health Services (health)
-                    { id: "srv12", title: "ABHA হেলথ আইডি", subtitle: "Digital Health ID", cat: "health", badge: "NHA India", btnText: "হেলথ কার্ড", description: "আয়ুষ্মান ভারত পোর্টালের সাহায্যে নাগরিকদের ডিজিটাল হেলথ লকার বা ১৪ সংখ্যার অনন্য এবিএইচএ নম্বর প্রাপ্তির গাইড।", steps: ["ABHA অফিসিয়াল পোর্টাল খুলুন ও আপনার আধার নম্বর ইনপুট করুন।", "আধার লিংকড মোবাইলে আসা ওটিপি দিয়ে বিবরণ মিলিয়ে নিন।", "পছন্দসই স্বাস্থ্য সচল কোড তৈরি করুন।", "মুহূর্তেই আপনার ABHA ডিজিটাল হেলথ ইউনিক কার্ড ডাউনলোড করুন।"], officialUrl: "https://abha.abdm.gov.in/" },
-                    { id: "srv_swasthya", title: "স্বাস্থ্য সাথী কার্ড", subtitle: "Swasthya Sathi", cat: "health", badge: "WB Govt Health", btnText: "স্বাস্থ্য বীমা", description: "প্রতি পরিবারে বাৎসরিক ৫ লক্ষ টাকা পর্যন্ত ক্যাশলেস আধুনিক চিকিৎসা পরিষেবার জন্য স্বাস্থ্য সাথী কার্ড গাইড।", steps: ["আপনার পরিবারের আধার ও রেশন কার্ড বিবরণ সহ আবেদন ফর্ম-বি পূরণ করুন।", "দুয়ারে সরকার ক্যাম্প বা স্থানীয় পঞ্চায়েত অফিসে ফর্মটি জমা দিন।", "নির্ধারিত তারিখে বায়োমেট্রিক ও ছবি তোলার ক্যাম্পে সপরিবারে উপস্থিত থাকুন।", "অনুমোদনের পর পরিবারের মহিলা কর্ত্রীর নামে ৫ লক্ষ টাকার বীমা কার্ড ইস্যু করা হবে।"], officialUrl: "https://swasthyasathi.gov.in/" }
-                  ]
-                    .filter((item) => docCategory === "all" || item.cat === docCategory)
-                    .map((item) => {
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => {
-                            const srvObj = SERVICES_DATA.find((u) => u.id === item.id);
-                            if (srvObj) {
-                              setSelectedService(srvObj);
-                            } else {
+                  {displayedItems.length === 0 ? (
+                    <div className="col-span-full py-16 px-4 text-center bg-white/65 backdrop-blur-xs border border-dashed border-orange-200 rounded-3xl animate-fade-in flex flex-col items-center justify-center space-y-2">
+                      <HelpCircle className="h-10 w-10 text-orange-300" />
+                      <p className="text-sm text-slate-700 font-extrabold font-sans">কোনো নাগরিক সেবা বা অফিশিয়াল লিংক পাওয়া যায়নি।</p>
+                      <p className="text-xs text-slate-500 max-w-md">অফিসিয়াল লগইন (Admin) সেকশনে গিয়ে নতুন সেবা, প্রকল্প বা নোটিফিকেশন যুক্ত করুন, যা রিয়েল-টাইমে এখানে সরাসরি যুক্ত হবে।</p>
+                    </div>
+                  ) : (
+                    displayedItems
+                      .map((item) => {
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => {
                               setSelectedService({
                                 id: item.id,
                                 title: item.title,
-                                description: (item as any).description || `${item.title} সংক্রান্ত নির্দেশিকা ও অনলাইন আবেদন পদ্ধতি।`,
-                                steps: (item as any).steps || [
-                                  "অফিসিয়াল সরকারী পোর্টালে ভিজিট করুন।",
-                                  "মোবাইল ও আধার ওটিপি দিয়ে সিটিজেন লগইন সম্পন্ন করুন।",
-                                  "প্রয়োজনীয় নথিপত্র আপলোড করে আবেদনপত্র সাবমিট করুন।"
-                                ],
-                                officialUrl: (item as any).officialUrl || "https://wb.gov.in"
+                                description: item.description,
+                                steps: item.steps,
+                                officialUrl: item.officialUrl,
+                                category: item.cat,
+                                categoryName: item.badge,
+                                logoUrl: item.logoUrl || ""
                               });
-                            }
-                          }}
-                          className="relative bg-white border border-slate-200/80 rounded-2xl p-3 hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 duration-300 flex flex-col justify-between h-[155px] overflow-hidden group select-none hover:border-orange-250/90"
-                        >
-                          {/* Glow Gradient Stripe on Top simulating Real Plastic Smartcard overlay */}
-                          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-400 via-amber-400 to-emerald-400 opacity-80" />
+                            }}
+                            className="relative bg-white border border-slate-200/80 rounded-2xl p-3 hover:shadow-md cursor-pointer transition-all hover:-translate-y-1 duration-300 flex flex-col justify-between h-[155px] overflow-hidden group select-none hover:border-orange-250/90"
+                          >
+                            {/* Glow Gradient Stripe on Top simulating Real Plastic Smartcard overlay */}
+                            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-400 via-amber-400 to-emerald-400 opacity-80" />
 
-                          <div className="space-y-2">
-                            {/* Top Header Row of Card: Official Icon + Gold Chip */}
-                            <div className="flex items-center justify-between">
-                              {/* SVG Logo container */}
-                              <div className="group-hover:scale-108 transition-transform duration-250 shrink-0">
-                                {renderOfficialLogo(item.id)}
-                              </div>
-
-                              {/* Holographic Smartcard Golden Microchip & Dept Initials */}
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                <span className="text-[7.5px] font-extrabold text-slate-400 bg-slate-50 px-1 py-0.2 rounded-sm uppercase tracking-wider font-mono">
-                                  {item.badge}
-                                </span>
-                                
-                                {/* Glowing Embedded Microchip Graphic */}
-                                <div className="w-5.5 h-4 rounded-sm bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-200 border border-amber-400 p-[1.5px] flex flex-col justify-between relative overflow-hidden shrink-0 shadow-3xs">
-                                  <div className="h-[0.5px] bg-amber-700/30 w-full" />
-                                  <div className="flex justify-between">
-                                    <div className="w-[0.5px] bg-amber-700/30 h-full" />
-                                    <div className="w-1.5 h-1.5 rounded-full border border-amber-700/20 bg-amber-200/40" />
-                                    <div className="w-[0.5px] bg-amber-700/30 h-full" />
+                            <div className="space-y-2">
+                              {/* Top Header Row of Card: Official Icon + Gold Chip */}
+                              <div className="flex items-center justify-between">
+                                {/* SVG Logo container */}
+                                {item.logoUrl ? (
+                                  <img 
+                                    src={item.logoUrl} 
+                                    className="w-10 h-10 rounded-lg object-contain border border-slate-100 p-0.5 bg-white shadow-3xs group-hover:scale-108 transition-all shrink-0" 
+                                    referrerPolicy="no-referrer" 
+                                    alt="" 
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="group-hover:scale-108 transition-transform duration-250 shrink-0">
+                                    {renderOfficialLogo(item.id)}
                                   </div>
-                                  <div className="h-[0.5px] bg-amber-700/30 w-full" />
+                                )}
+
+                                {/* Holographic Smartcard Golden Microchip & Dept Initials */}
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <span className="text-[7.5px] font-extrabold text-slate-400 bg-slate-50 px-1 py-0.2 rounded-sm uppercase tracking-wider font-mono">
+                                    {item.badge}
+                                  </span>
+                                  
+                                  {/* Glowing Embedded Microchip Graphic */}
+                                  <div className="w-5.5 h-4 rounded-sm bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-200 border border-amber-400 p-[1.5px] flex flex-col justify-between relative overflow-hidden shrink-0 shadow-3xs">
+                                    <div className="h-[0.5px] bg-amber-700/30 w-full" />
+                                    <div className="flex justify-between">
+                                      <div className="w-[0.5px] bg-amber-700/30 h-full" />
+                                      <div className="w-1.5 h-1.5 rounded-full border border-amber-700/20 bg-amber-200/40" />
+                                      <div className="w-[0.5px] bg-amber-700/30 h-full" />
+                                    </div>
+                                    <div className="h-[0.5px] bg-amber-700/30 w-full" />
+                                  </div>
                                 </div>
                               </div>
+
+                              {/* Titles inside the card */}
+                              <div className="pt-1.5">
+                                <h4 className="font-extrabold text-[12px] md:text-[12.5px]/[13px] text-slate-800 leading-tight tracking-tight group-hover:text-bengali-orange transition-colors duration-200 line-clamp-2 min-h-[2.4em]">
+                                  {item.title}
+                                </h4>
+                                <p className="text-[9.5px] text-slate-400 font-mono tracking-wider leading-none mt-0.5 uppercase truncate">
+                                  {item.subtitle}
+                                </p>
+                              </div>
                             </div>
 
-                            {/* Titles inside the card */}
-                            <div className="pt-1.5">
-                              <h4 className="font-extrabold text-[12px] md:text-[12.5px]/[13px] text-slate-800 leading-tight tracking-tight group-hover:text-bengali-orange transition-colors duration-200 line-clamp-1">
-                                {item.title}
-                              </h4>
-                              <p className="text-[9.5px] text-slate-400 font-mono tracking-wider leading-none mt-0.5 uppercase">
-                                {item.subtitle}
-                              </p>
+                            {/* Card bottom footer with compact CTA */}
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                              <span className="text-[8.5px] font-extrabold text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md truncate max-w-[70px]">
+                                {item.btnText}
+                              </span>
+                              <span className="text-[9px] font-black text-bengali-orange flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform duration-200">
+                                আবেদন →
+                              </span>
                             </div>
                           </div>
-
-                          {/* Card bottom footer with compact CTA */}
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-[8.5px] font-extrabold text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md">
-                              {item.btnText}
-                            </span>
-                            <span className="text-[9px] font-black text-bengali-orange flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform duration-200">
-                              আবেদন →
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                  )}
                 </div>
               </div>
             </section>
@@ -1126,10 +1506,10 @@ export default function App() {
             <button onClick={() => setActiveLegalModal("privacy")} className="hover:text-white transition-colors cursor-pointer focus:outline-hidden">গোপনীয়তা নীতি</button>
           </div>
           <p className="leading-relaxed text-slate-300 font-medium">
-            "বাংলার সরকার কোনো সরকারি ওয়েবসাইট নয়। আমরা শুধুমাত্র বিভিন্ন সরকারি পরিষেবা, প্রকল্প, চাকরি এবং স্কলারশিপ সংক্রান্ত অফিসিয়াল তথ্য ও লিংক একত্রে প্রদান করি। সকল আবেদন সংশ্লিষ্ট অফিসিয়াল ওয়েবসাইটে সম্পন্ন হয়।"
+            "বাংলার সেবা কোনো সরকারি ওয়েবসাইট নয়। আমরা শুধুমাত্র বিভিন্ন সরকারি পরিষেবা, প্রকল্প, চাকরি এবং স্কলারশিপ সংক্রান্ত অফিসিয়াল তথ্য ও লিংক একত্রে প্রদান করি। সকল আবেদন সংশ্লিষ্ট অফিসিয়াল ওয়েবসাইটে সম্পন্ন হয়।"
           </p>
           <p className="text-[10px] text-slate-400 font-mono pt-2 border-t border-white/5">
-            © 2026 বাংলার সরকার সিটিজেন গাইডস ট্রাস্ট। সর্বস্বত্ব সংরক্ষিত।
+            © 2026 বাংলার সেবা সিটিজেন গাইডস ট্রাস্ট। সর্বস্বত্ব সংরক্ষিত।
           </p>
         </div>
       </footer>
@@ -1194,18 +1574,18 @@ export default function App() {
 
               {/* Sub-disclaimer inside details */}
               <div className="bg-slate-100 px-4 py-3 rounded-lg border border-slate-200 text-xs text-slate-500">
-                <strong>গুরুত্বপূর্ণ তথ্য:</strong> অনুগ্রহ করে মনে রাখবেন যে বাংলার সরকার কোনো অফিসিয়াল সরকারি সংস্থা নয়। আপনার নথিসমূহ নিয়ে অফিশিয়াল সরকারি পোর্টালেই আবেদন জমা দিন।
+                <strong>গুরুত্বপূর্ণ তথ্য:</strong> অনুগ্রহ করে মনে রাখবেন যে বাংলার সেবা কোনো অফিসিয়াল সরকারি সংস্থা নয়। আপনার নথিসমূহ নিয়ে অফিশিয়াল সরকারি পোর্টালেই আবেদন জমা দিন।
               </div>
             </div>
 
             {/* Modal foot */}
-            <div className="bg-slate-50 p-4 border-t border-slate-150 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-slate-50 p-4 border-t border-slate-150 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
                 onClick={() => {
                   toggleSaveScheme(selectedScheme.id);
                   setSelectedScheme(null);
                 }}
-                className={`text-xs font-semibold py-2 px-4 rounded-lg flex items-center gap-2 border transition-colors ${
+                className={`text-xs font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 border transition-colors w-full sm:w-auto ${
                   savedSchemeIds.includes(selectedScheme.id)
                     ? "bg-orange-50 border-orange-200 text-bengali-orange"
                     : "border-slate-300 hover:bg-slate-100/50"
@@ -1218,7 +1598,7 @@ export default function App() {
                 href={selectedScheme.officialUrl}
                 target="_blank"
                 rel="noreferrer referrer"
-                className="text-xs font-semibold py-2 px-5 bg-bengali-orange text-white hover:bg-orange-bengali-orange-hover rounded-lg flex items-center gap-1 shadow-sm transition-transform active:scale-95 text-center leading-none"
+                className="text-xs font-semibold py-2.5 px-5 bg-bengali-orange text-white hover:bg-[#8D3F0D] rounded-lg flex items-center justify-center gap-1 shadow-sm transition-transform active:scale-95 text-center leading-none w-full sm:w-auto"
               >
                 <span>অফিশিয়াল ওয়েবসাইটে যান</span>
                 <ArrowUpRight className="h-4 w-4" />
@@ -1253,7 +1633,7 @@ export default function App() {
                   <span className="text-base font-bold text-[#1E3A5F]">{selectedJob.vacancy}</span>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <span className="text-xs text-slate-450 uppercase block font-semibold">মাসিক বেতন / স্কেল:</span>
+                  <span className="text-xs text-slate-400 uppercase block font-semibold">মাসিক বেতন / স্কেল:</span>
                   <span className="text-base font-bold text-emerald-800">{selectedJob.salary || "গ্রেড পে অনুযায়ী"}</span>
                 </div>
               </div>
@@ -1270,13 +1650,13 @@ export default function App() {
             </div>
 
             {/* job modal foot */}
-            <div className="bg-slate-50 p-4 border-t border-slate-150 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-slate-50 p-4 border-t border-slate-150 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
                 onClick={() => {
                   toggleSaveJob(selectedJob.id);
                   setSelectedJob(null);
                 }}
-                className={`text-xs font-semibold py-2 px-4 rounded-lg flex items-center gap-2 border transition-colors ${
+                className={`text-xs font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 border transition-colors w-full sm:w-auto ${
                   savedJobIds.includes(selectedJob.id)
                     ? "bg-slate-100 border-slate-300 text-emerald-700"
                     : "border-slate-300 hover:bg-slate-100/50"
@@ -1289,7 +1669,7 @@ export default function App() {
                 href={selectedJob.officialUrl}
                 target="_blank"
                 rel="noreferrer referrer"
-                className="text-xs font-semibold py-2 px-5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center gap-1 shadow-sm transition-transform active:scale-95"
+                className="text-xs font-semibold py-2.5 px-5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center justify-center gap-1 shadow-sm transition-transform active:scale-95 w-full sm:w-auto"
               >
                 <span>অফিশিয়াল নিয়োগ লিংকে যান</span>
                 <ArrowUpRight className="h-4 w-4" />
@@ -1305,14 +1685,28 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-2xl w-full max-w-[550px] max-h-[85vh] overflow-y-auto border border-orange-50 shadow-2xl">
             {/* Header */}
-            <div className="bg-gradient-to-r from-bengali-orange to-[#8D3F0D] text-white p-5 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] bg-white/20 text-white font-bold p-1 rounded-full uppercase tracking-wider">
-                  নথিপত্র সেবা নির্দেশিকা
-                </span>
-                <h3 className="font-bold text-lg text-white mt-1">{selectedService.title}</h3>
+            <div className="bg-gradient-to-r from-bengali-orange to-[#8D3F0D] text-white p-5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {selectedService.logoUrl ? (
+                  <img 
+                    src={selectedService.logoUrl} 
+                    className="w-12 h-12 rounded-xl object-contain bg-white border border-white/20 p-1.5 shadow-sm" 
+                    referrerPolicy="no-referrer" 
+                    alt="" 
+                  />
+                ) : (
+                  <div className="bg-white/10 p-2.5 rounded-xl border border-white/10 shrink-0">
+                    {renderOfficialLogo(selectedService.id)}
+                  </div>
+                )}
+                <div>
+                  <span className="text-[9px] md:text-[10px] bg-white/20 text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    নথিপত্র সেবা নির্দেশিকা
+                  </span>
+                  <h3 className="font-bold text-base md:text-lg text-white mt-1 leading-tight">{selectedService.title}</h3>
+                </div>
               </div>
-              <button onClick={() => setSelectedService(null)} className="text-white hover:bg-white/15 rounded-lg p-2">
+              <button onClick={() => setSelectedService(null)} className="text-white hover:bg-white/15 rounded-lg p-2 shrink-0">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1336,13 +1730,13 @@ export default function App() {
               </div>
             </div>
 
-            {/* Foot */}
-            <div className="bg-slate-50 p-4 border-t border-slate-150 flex items-center justify-end">
+            {/* Feet */}
+            <div className="bg-slate-50 p-4 border-t border-slate-150 flex flex-col sm:flex-row items-stretch sm:items-center justify-end">
               <a
                 href={selectedService.officialUrl}
                 target="_blank"
                 rel="noreferrer referrer"
-                className="text-xs font-semibold py-2 px-5 bg-bengali-orange text-white hover:bg-orange-bengali-orange-hover rounded-lg flex items-center gap-1 shadow-sm transition-transform active:scale-95"
+                className="text-xs font-semibold py-2.5 px-5 bg-bengali-orange text-white hover:bg-[#8D3F0D] rounded-lg flex items-center justify-center gap-1 shadow-sm transition-transform active:scale-95 w-full sm:w-auto"
               >
                 <span>সরাসরি অফিসিয়াল পোর্টাল লিংক</span>
                 <ArrowUpRight className="h-4 w-4" />
@@ -1363,23 +1757,25 @@ export default function App() {
                 setMobileNumber("");
                 setSubTypeSuccess(false);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 rounded-lg p-1"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 rounded-lg p-1 animate-duration-200"
             >
               <X className="h-5 w-5" />
             </button>
 
             {subSuccess ? (
-              <div className="text-center py-6 space-y-3 animate-pulse">
-                <div className="h-14 w-14 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto text-xl">✓</div>
-                <h3 className="font-extrabold text-lg text-slate-900">সুপারিশ করা অ্যালার্ট সফল!</h3>
-                <p className="text-xs text-slate-500 leading-normal px-2">
-                  ধন্যবাদ! আপনার মোবাইল নম্বর সফলভাবে ভেরিফাই করা হয়েছে। এখন থেকে নতুন সামাজিক স্কিম এবং নিয়োগের সকল খবর নিয়মিত <strong>{subType}</strong> সঙ্কেত দ্বারা পাঠানো হবে।
+              <div className="text-center py-6 space-y-4">
+                <div className="h-10 w-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-3">
+                  <span className="text-lg font-bold">✓</span>
+                </div>
+                <h3 className="font-extrabold text-[#1E3A5F]">ধন্যবাদ!</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  আপনার রেজিস্ট্রেশন সফল হয়েছে। শীঘ্রই আপনার নম্বরে সরাসরি {subType} অ্যালার্ট পাঠানো হবে।
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubscribeSubmit} className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${subType === "WhatsApp" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800"}`}>
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${subType === "WhatsApp" ? "bg-emerald-100 text-emerald-800 font-bold" : "bg-sky-100 text-sky-800 font-bold"}`}>
                     <Smartphone className="h-5 w-5" />
                   </div>
                   <div>
@@ -1398,15 +1794,15 @@ export default function App() {
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
                       placeholder="9876543210"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/10 text-slate-900"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/10 text-slate-900 font-sans"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className={`w-full font-bold text-xs py-3 rounded-xl text-white transition-all shadow-sm active:scale-95 ${
-                    subType === "WhatsApp" ? "bg-emerald-650 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-sky-600 hover:bg-sky-700 shadow-sky-500/20"
+                  className={`w-full font-bold text-xs py-3 rounded-xl text-white transition-all shadow-sm active:scale-95 cursor-pointer ${
+                    subType === "WhatsApp" ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-sky-600 hover:bg-sky-700 shadow-sky-500/20"
                   }`}
                 >
                   ফ্রি মেম্বারশিপ একটিভ করুন
@@ -1416,76 +1812,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* MODAL 5: ALL SERVICES QUICK EXPLORER POPUP */}
-      {showMoreServicesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-[720px] max-h-[85vh] overflow-y-auto border border-orange-100 shadow-2xl">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-bengali-orange to-[#8D3F0D] text-white p-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-              <div>
-                <h3 className="font-extrabold text-lg text-white">বাংলার নাগরিক সেবা ডিরেক্টরি (সমস্ত নথি ও পোর্টাল)</h3>
-                <p className="text-[11px] text-orange-100 mt-1">মোট ১১+ জরুরি ডিজিটাল নাগরিক নথি গাইড ও আবেদনের সরাসরি লিংক</p>
-              </div>
-              <button
-                onClick={() => setShowMoreServicesModal(false)}
-                className="text-white hover:bg-white/15 rounded-lg p-2 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* List and Grid */}
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {SERVICES_DATA.map((srv) => (
-                  <div
-                    key={srv.id}
-                    onClick={() => {
-                      setSelectedService(srv);
-                      setShowMoreServicesModal(false);
-                    }}
-                    className="bg-slate-50 hover:bg-orange-50/20 p-4 rounded-2xl border border-slate-200/60 cursor-pointer transition-all hover:border-orange-200 flex flex-col justify-between space-y-3 group"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-orange-500 block"></span>
-                        <h4 className="font-extrabold text-xs text-slate-800 group-hover:text-bengali-orange transition-colors">
-                          {srv.title}
-                        </h4>
-                      </div>
-                      <p className="text-[11px] text-slate-450 mt-1 lines-clamp-2 leading-relaxed">
-                        {srv.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] font-bold text-bengali-orange border-t border-slate-100 pt-2 mt-1">
-                      <span>নির্দেশিকা দেখুন ↓</span>
-                      <span className="text-slate-400 font-mono text-[9px]">ID: {srv.id}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Disclaimer notice */}
-              <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-xs text-[#8D3F0D] leading-relaxed">
-                <strong>অনুগ্রহ করে সতর্ক থাকুন:</strong> এটি কোনো অফিশিয়াল সরকারি ওয়েব আবেদন কেন্দ্র নয়। গাইডলাইনসমূহ অনুসরণের পর কোনো তথ্য প্রদান বা পেমেন্ট শুধুমাত্র অফিসিয়াল সরকারি পোর্টালগুলোতে প্রবেশ করেই সম্পন্ন করবেন।
-              </div>
-            </div>
-
-            {/* Sticky Foot */}
-            <div className="bg-slate-50 p-4 border-t border-slate-200 flex items-center justify-end sticky bottom-0">
-              <button
-                onClick={() => setShowMoreServicesModal(false)}
-                className="text-xs font-bold py-2 px-5 bg-slate-800 text-white hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
-              >
-                বন্ধ করুন
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. AI CONVERSATIONAL FLOATING TRIGGER BUTTON REMOVED IN RESP TO USER REQUEST */}
 
       {/* AI Bot floating window interface */}
       <AiAssistant isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
@@ -1499,57 +1825,48 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-amber-400" />
                 <h3 className="font-extrabold text-base md:text-lg text-white">
-                  {activeLegalModal === "terms" && "পরিষেবা নির্দেশিকা (Terms of Service)"}
-                  {activeLegalModal === "disclaimer" && "আইনী নোটিশ (Legal Disclaimer)"}
                   {activeLegalModal === "privacy" && "গোপনীয়তা নীতি (Privacy Policy)"}
                 </h3>
               </div>
               <button 
                 onClick={() => setActiveLegalModal(null)} 
-                className="text-white bg-white/10 hover:bg-white/20 rounded-lg p-2 transition-all cursor-pointer"
-                title="বন্ধ করুন"
+                className="text-white bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-all cursor-pointer font-sans"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 space-y-5 text-sm text-slate-700 leading-relaxed overflow-y-auto">
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
               {activeLegalModal === "terms" && (
-                <div className="space-y-4">
-                  <div className="bg-orange-50/70 border border-orange-100 p-4 rounded-xl text-xs text-[#8D3F0D] font-medium leading-relaxed">
-                    <strong>গুরুত্বপূর্ণ গাইডলাইন:</strong> এই নাগরিক নির্দেশিকা পোর্টালটি সম্পূর্ণ বিনামূল্যে এবং সাধারণ ব্যবহারের জন্য তৈরি। এটি ব্যবহারের আগে নিচের নিয়ামাবলী পড়ে নিন।
+                <div className="space-y-4 text-xs md:text-sm text-slate-650 leading-relaxed font-sans">
+                  <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl text-xs text-orange-850 font-semibold leading-relaxed">
+                    📝 ব্যবহারের পূর্বে আমাদের নিয়মাবলী ও শর্তসমূহ মনোযোগ দিয়ে দয়া করে পড়ে নিন।
                   </div>
                   <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">১. সাধারণ ব্যবহার বিধি</h4>
+                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">১. অ্যাপ ব্যবহার ও দায়িত্ব</h4>
                     <p className="text-slate-650">
-                      "সব নথি ও সরকারি কার্ড গাইড" পোর্টালটি পশ্চিমবঙ্গের নাগরিকদের সুবিধার্থে বিভিন্ন প্রকল্প, স্কলারশিপ ও চাকরির নির্ভরযোগ্য তথ্য একসাথে এক ক্লিকে দেখার ব্যবস্থা করেছে। এই তথ্যগুলো ব্যবহার করে নাগরিকেরা স্বতঃস্ফূর্তভাবে দিকনির্দেশনা ও সরাসরি অফিশিয়াল লিংক পেতে পারেন।
+                      আমাদের 'বাংলার সেবা পোর্টাল' একটি তথ্য প্রদানকারী অ্যাপ্লিকেশন। যেখানে আমরা পাবলিক ডোমেনে থাকা নিখরচায় সাধারণ তথ্যাদি প্রদান এবং ব্যবহারকারীদের সরাসরি অফিশিয়াল সরকারি ওয়েব লিঙ্কে পোর্ট করার সুবিধা দিই। এখানে কোনো আর্থিক ফিস ছাড়া পরিষেবা পাওয়া যাবে।
                     </p>
                   </section>
                   <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">২. কোনো অফিশিয়াল লেনদেন নয়</h4>
-                    <p className="text-slate-650">
-                      আমাদের প্ল্যাটফর্মে কোনো সরকারি টাকা বা আবেদন ফি জমা নেওয়া হয় না এবং অফিশিয়াল আবেদনপত্র সরাসরি আমাদের সার্ভারে জমা হয় না। সকল আর্থিক কার্যক্রম ও ফর্ম ফিলাপ সংশ্লিষ্ট সরকারি বা দপ্তরীয় পোর্টালেই গিয়ে সম্পন্ন করতে হবে।
-                    </p>
-                  </section>
-                  <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">৩. তথ্যগত নির্ভুলতা</h4>
-                    <p className="text-slate-650">
-                      আমরা সর্বদা সরকারি গেজেট, অফিশিয়াল নিয়োগ বিজ্ঞপ্তি এবং নির্ভরযোগ্য দাপ্তরিক সোর্সের ভিত্তিতে ডেটা আপডেট রাখতে সচেষ্ট থাকি। তবুও, আবেদন বা কোনো তথ্য পেশ করার পূর্বে অবশ্যই অফিসিয়াল পিডিফ বিজ্ঞপ্তি বা মূল সরকারি সাইটটি খতিয়ে দেখে নেওয়া নাগরিকের নিজ দায়িত্ব।
+                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">২. কোনো প্রতারণামূলক কাজের নিষেধ</h4>
+                    <p className="text-slate-650 font-sans">
+                      কোনো ইউজার অ্যাপ্লিকেশনটির তথ্য অসাধু উপায়ে বিপণন বা নকল সাইটে রিডাইরেক্ট করে মানুষের সাথে প্রতারণা করতে পারবে না। আমাদের পোর্টালের সমস্ত কনটেন্ট সাধারণ মানুষের স্বার্থে উন্মুক্ত।
                     </p>
                   </section>
                 </div>
               )}
 
               {activeLegalModal === "disclaimer" && (
-                <div className="space-y-4">
-                  <div className="bg-red-50/70 border border-red-105/40 p-4 rounded-xl text-xs text-red-850 font-bold leading-relaxed">
-                    🚨 আইনী নোটিশ / অবমাননা পরিহার নোটিশ (Disclaimer)
+                <div className="space-y-4 text-xs md:text-sm text-slate-650 leading-relaxed font-sans">
+                  <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl text-xs text-orange-850 font-semibold leading-relaxed font-sans">
+                    ⚠️ এটি একটি অ-সরকারি জনকল্যাণমূলক তথ্য নির্দেশিকা পোর্টাল।
                   </div>
                   <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">১. প্রাতিষ্ঠানিক অসংলগ্নতা</h4>
-                    <p className="text-slate-650 font-bold">
-                      "সব নথি ও সরকারি কার্ড গাইড" একটি সম্পূর্ণ স্বাধীন ব্যক্তিগত নাগরিক সহায়ক এবং তথ্য একত্রীকরণ ডিরেক্টরি। এটি পশ্চিমবঙ্গ সরকার (Govt of West Bengal), ভারত সরকার (Govt of India), বা কোনো সরকারি অফিস বা মন্ত্রণালয়ের সাথে অনুমোদিত, স্পনসরড বা কোনোভাবেই অফিশিয়ালভাবে যুক্ত নয়।
+                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">১. অ-সরকারি চরিত্র</h4>
+                    <p className="text-slate-650">
+                      এই অ্যাপ্লিকেশনটি সম্পূর্ণ স্বাধীন এবং একটি বেসরকারী ডিরেক্টরি। এটি পশ্চিমবঙ্গ সরকার (Govt of West Bengal), ভারত সরকার (Govt of India), বা কোনো সরকারি অফিস বা মন্ত্রণালয়ের সাথে অনুমোদিত, স্পনসরড বা কোনোভাবেই অফিশিয়ালভাবে যুক্ত নয়।
                     </p>
                   </section>
                   <section className="space-y-2">
@@ -1559,8 +1876,8 @@ export default function App() {
                     </p>
                   </section>
                   <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 text-[15px] border-b border-slate-100 pb-1">৩. দায়বদ্ধতা সীমা</h4>
-                    <p className="text-slate-[#E96A1F]">
+                    <h4 className="font-bold text-[#E96A1F] text-[15px] border-b border-slate-100 pb-1">৩. দায়বদ্ধতা সীমা</h4>
+                    <p className="text-[#E96A1F]">
                       কোনো ব্যবহারকারী ভুল তথ্যের ভিত্তিতে বা কোনো জাল সাইট বা থার্ড-পার্টি লিঙ্কের জন্য ক্ষতিগ্রস্ত হলে আমাদের প্ল্যাটফর্ম বা এর ডেভেলপার পক্ষ আইনগতভাবে বা আর্থিকভাবে দায়বদ্ধ থাকবে না। সর্বদা ব্যবহারকারীকে নিশ্চিত করতে হবে যেন আবেদন লিঙ্কটি .gov.in বা .nic.in এ শেষ হয়।
                     </p>
                   </section>
@@ -1568,7 +1885,7 @@ export default function App() {
               )}
 
               {activeLegalModal === "privacy" && (
-                <div className="space-y-4">
+                <div className="space-y-4 text-xs md:text-sm text-slate-650 leading-relaxed">
                   <div className="bg-emerald-50/70 border border-emerald-100 p-4 rounded-xl text-xs text-emerald-800 font-medium leading-relaxed">
                     🔒 আপনার ডেটার নিরাপত্তা আমাদের পরম অগ্রাধিকার। আমরা কোনো গোপন তথ্য সংগ্রহ করি না।
                   </div>
@@ -1630,47 +1947,75 @@ export default function App() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleAdminPasswordSubmit} className="p-6 space-y-4">
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                এই বিভাগটি শুধুমাত্র প্যানেল অ্যাডমিন ও আধিকারিকদের জন্য সংরক্ষিত। অনুগ্রহ করে অ্যাক্সেস পাসওয়ার্ড প্রদান করুন।
+            <form onSubmit={handleAdminPasswordSubmit} className="p-6 space-y-5">
+              {/* Central padlock illustration */}
+              <div className="flex flex-col items-center justify-center space-y-2 pb-2">
+                <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-100/60 rounded-full border border-orange-200/50 shadow-inner relative">
+                  <Lock className="h-8 w-8 text-bengali-orange animate-pulse" />
+                  <div className="absolute -top-1 -right-1 bg-green-500 rounded-full h-3 w-3 border-2 border-white"></div>
+                </div>
+                <h4 className="font-extrabold text-[#1E3A5F] text-xs tracking-wider uppercase font-mono">
+                  SECURE STAFF ACCESS ONLY
+                </h4>
+              </div>
+
+              <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed">
+                এই বিভাগটি শুধুমাত্র প্যানেল অ্যাডমিন ও আধিকারিকদের জন্য সংরক্ষিত। অনুগ্রহ করে প্রবেশের জন্য অ্যাক্সেস কোড লিখুন।
               </p>
 
               {adminPasswordError && (
-                <div className="bg-red-50 border border-red-105/50 p-3 rounded-xl text-xs text-red-600 font-bold leading-normal animate-shake">
-                  ⚠️ {adminPasswordError}
+                <div className="bg-red-50 border border-red-200 p-3 rounded-xl text-xs text-red-650 font-bold leading-normal animate-shake flex items-center gap-1.5 justify-center">
+                  <span>⚠️</span> {adminPasswordError}
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">ডিভাইস সিকিউরিটি কোড (পাসওয়ার্ড)</label>
-                <input
-                  type="password"
-                  value={adminPasswordInput}
-                  onChange={(e) => setAdminPasswordInput(e.target.value)}
-                  placeholder="অ্যাডমিন সিকিউর পাসওয়ার্ড লিখুন..."
-                  className="w-full px-4 py-2 text-xs border border-slate-205 rounded-xl text-slate-850 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#E96A1F] focus:border-[#E96A1F] transition-all bg-slate-50/50"
-                  autoFocus
-                />
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>ডিভাইস সিকিউরিটি কোড (পাসওয়ার্ড)</span>
+                  <span className="text-[10px] text-slate-400 font-medium font-sans">পাসওয়ার্ড: ১০০</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={adminPasswordInput}
+                    onChange={(e) => setAdminPasswordInput(e.target.value)}
+                    placeholder="অ্যাডমিন সিকিউর পাসওয়ার্ড লিখুন..."
+                    className="w-full pl-4 pr-10 py-3 text-sm border-2 border-slate-205 rounded-xl text-slate-850 font-semibold focus:outline-none focus:ring-4 focus:ring-orange-100/50 focus:border-[#E96A1F] transition-all bg-slate-50 hover:bg-slate-100/20"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4.5 w-4.5 shrink-0" />
+                    ) : (
+                      <Eye className="h-4.5 w-4.5 shrink-0" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAdminPasswordModal(false);
                     setAdminPasswordError("");
                     setAdminPasswordInput("");
+                    setShowPassword(false);
                   }}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                 >
-                  বাতিল করুন
+                  বাতিল
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-extrabold text-white bg-slate-850 hover:bg-slate-950 rounded-xl transition-all cursor-pointer shadow-md"
+                  className="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black rounded-xl transition-all cursor-pointer shadow-md transform hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  প্রবেশ করুন
+                  প্রবেশ করুন →
                 </button>
               </div>
             </form>

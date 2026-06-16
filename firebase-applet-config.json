@@ -1,10 +1,11 @@
 {
-  "projectId": "tonal-sentinel-3cf5x",
-  "appId": "1:944855565990:web:f0449c5c294a7e4e739667",
-  "apiKey": "AIzaSyC1rYWKmhhjXhxseA0QoiO2ZBaYXJo0Z9U",
-  "authDomain": "tonal-sentinel-3cf5x.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-1cdef8b8-dcc1-47d1-8fc8-831425e33fac",
-  "storageBucket": "tonal-sentinel-3cf5x.firebasestorage.app",
-  "messagingSenderId": "944855565990",
+  "projectId": "confident-sunspot-9d2jw",
+  "appId": "1:242192737707:web:d99a596f1bb77728571eee",
+  "apiKey": "AIzaSyDrA9LUiKUqvTrH3ks8veOwP-9UHSMuDSM",
+  "authDomain": "confident-sunspot-9d2jw.firebaseapp.com",
+  "databaseURL": "https://banglar-saba-default-rtdb.firebaseio.com/",
+  "firestoreDatabaseId": "ai-studio-f3948467-9eb1-48f1-8b27-dd83267c1807",
+  "storageBucket": "confident-sunspot-9d2jw.firebasestorage.app",
+  "messagingSenderId": "242192737707",
   "measurementId": ""
 }

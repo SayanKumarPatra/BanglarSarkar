@@ -17,7 +17,7 @@ export default function AiAssistant({ isOpen, onClose }: AiAssistantProps) {
     {
       id: "msg-init",
       sender: "bot",
-      text: "নমস্কার! আমি আপনার ডিজিটাল এআই সহায়ক। বাংলার সরকারের বিভিন্ন সামাজিক প্রকল্প (যেমন লক্ষ্মীর ভাণ্ডার, কন্যাশ্রী), চাকরি, রেশন বা আধার সংশোধন নিয়ে আপনার মনে কোনো প্রশ্ন থাকলে আমাকে নির্দ্বিধায় জিজ্ঞাসা করুন।"
+      text: "নমস্কার! আমি আপনার ডিজিটাল এআই সহায়ক। বাংলার সেবার বিভিন্ন সামাজিক প্রকল্প (যেমন লক্ষ্মীর ভাণ্ডার, কন্যাশ্রী), চাকরি, রেশন বা আধার সংশোধন নিয়ে আপনার মনে কোনো প্রশ্ন থাকলে আমাকে নির্দ্বিধায় জিজ্ঞাসা করুন।"
     }
   ]);
   const [input, setInput] = useState("");
@@ -77,7 +77,7 @@ export default function AiAssistant({ isOpen, onClose }: AiAssistantProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex h-[600px] w-full max-w-[430px] flex-col rounded-2xl border border-orange-100 bg-white shadow-2xl overflow-hidden transition-all duration-300">
+    <div className="fixed bottom-0 right-0 md:bottom-6 md:right-6 z-50 flex h-full md:h-[600px] w-full md:max-w-[430px] flex-col rounded-none md:rounded-2xl border-t md:border border-orange-100 bg-white shadow-2xl overflow-hidden transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between bg-gradient-to-r from-bengali-orange to-[#8D3F0D] px-4 py-4 text-white">
         <div className="flex items-center gap-2">
