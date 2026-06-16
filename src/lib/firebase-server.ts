@@ -46,10 +46,10 @@ if (!isPlaceholder && firebaseConfig) {
   try {
     const app = initializeApp(firebaseConfig);
     
-    // Initialize Realtime Database - bypassed to use Firestore instead
+    // Initialize Realtime Database using the provided databaseURL
     if (firebaseConfig.databaseURL) {
-      rtdb = null;
-      console.log(`[Firebase Server] Realtime Database bypassed in favor of Firestore: ${firebaseConfig.firestoreDatabaseId}`);
+      rtdb = getDatabase(app);
+      console.log(`[Firebase Server] Realtime Database initialized: ${firebaseConfig.databaseURL}`);
     }
     
     // Also initialize Firestore as a parallel option or fallback

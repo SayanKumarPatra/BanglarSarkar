@@ -13,8 +13,8 @@ const app = initializeApp(firebaseConfig);
 // Initialize and export the firestore database instance
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Bypassing RTDB in favor of secure real-time Firestore DB provisioned for the applet
-export const rtdb = null;
+// Initialize real-time database using the provided databaseURL
+export const rtdb = firebaseConfig.databaseURL ? getDatabase(app) : null;
 
 export enum OperationType {
   CREATE = 'create',

@@ -1,11 +1,11 @@
 {
-  "projectId": "confident-sunspot-9d2jw",
-  "appId": "1:242192737707:web:d99a596f1bb77728571eee",
-  "apiKey": "AIzaSyDrA9LUiKUqvTrH3ks8veOwP-9UHSMuDSM",
-  "authDomain": "confident-sunspot-9d2jw.firebaseapp.com",
-  "databaseURL": "https://banglar-saba-default-rtdb.firebaseio.com/",
-  "firestoreDatabaseId": "ai-studio-f3948467-9eb1-48f1-8b27-dd83267c1807",
-  "storageBucket": "confident-sunspot-9d2jw.firebasestorage.app",
-  "messagingSenderId": "242192737707",
-  "measurementId": ""
+  "projectId": "banglar-saba",
+  "appId": "1:866366622592:web:91616d35b5d6c12e758f65",
+  "apiKey": "AIzaSyAp5iETJ_UJwTo0I-Vnb5rJzct22NMQNsM",
+  "authDomain": "banglar-saba.firebaseapp.com",
+  "databaseURL": "https://banglar-saba-default-rtdb.firebaseio.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "banglar-saba.firebasestorage.app",
+  "messagingSenderId": "866366622592",
+  "measurementId": "G-3TTFD2KFR8"
 }
