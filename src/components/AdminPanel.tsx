@@ -154,20 +154,7 @@ export default function AdminPanel({
   onSaveSuggestion = async () => {},
   onDeleteSuggestion = async () => {}
 }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<
-    | "analytics"
-    | "welfare"
-    | "jobs"
-    | "scholarships"
-    | "identity"
-    | "utility"
-    | "health"
-    | "land"
-    | "cyber_cafe"
-    | "categories"
-    | "suggestions"
-    | "settings"
-  >("analytics");
+  const [activeTab, setActiveTab] = useState<string>("analytics");
   const [notificationMsg, setNotificationMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -819,32 +806,51 @@ export default function AdminPanel({
     showNotification("পোর্টাল জুড়ে ব্রডকাস্ট पुश ঘোষণা তাৎক্ষণিক সফল!");
   };
 
-  const defaultCategoryIds = ["welfare", "jobs", "scholarships", "identity", "utility", "health", "land", "cyber_cafe"];
-  const customCategories = categories.filter(c => c && c.id && !defaultCategoryIds.includes(c.id));
-  const serviceTabIds = ["identity", "utility", "health", "land", "cyber_cafe", ...customCategories.map(c => c.id)];
+  const serviceTabIds = categories
+    .filter((c) => c && c.id && c.id !== "welfare" && c.id !== "jobs" && c.id !== "scholarships")
+    .map((c) => c.id);
 
   const tabItems = [
     { id: "analytics", label: "সার্বিক অ্যানালিটিক্স", icon: PieChart, count: null },
-    { id: "welfare", label: "সরকারি প্রকল্প", icon: Layers, count: schemes.length },
-    { id: "jobs", label: "সরকারি চাকরি", icon: Briefcase, count: jobs.length },
-    { id: "scholarships", label: "স্কলারশিপ", icon: GraduationCap, count: scholarships.length },
-    { id: "identity", label: "পরিচয় ও কার্ড", icon: FileCheck, count: services.filter(s => s.category === "identity" || s.category === "aadhaar_pan").length },
-    { id: "utility", label: "শংসাপত্র", icon: FileText, count: services.filter(s => s.category === "utility" || s.category === "certificates").length },
-    { id: "health", label: "হেলথ ও বিমা", icon: HeartPulse, count: services.filter(s => s.category === "health").length },
-    { id: "land", label: "জমি ও পরচা", icon: FileCheck, count: services.filter(s => s.category === "land").length },
-    { id: "cyber_cafe", label: "সাইবার ক্যাফে", icon: Laptop, count: services.filter(s => s.category === "cyber_cafe").length },
     
-    // Dynamic Custom Categories
-    ...customCategories.map((c) => ({
-      id: c.id,
-      label: c.label,
-      icon: getCategoryIcon(c.iconName),
-      count: services.filter(s => s.category === c.id).length
-    })),
+    // Include schemes/welfare if welfare is in categories
+    ...(categories.some((c) => c && c.id === "welfare")
+      ? [{ id: "welfare", label: "সরকারি প্রকল্প", icon: Layers, count: schemes.length }]
+      : []),
+
+    // Include jobs if jobs is in categories
+    ...(categories.some((c) => c && c.id === "jobs")
+      ? [{ id: "jobs", label: "সরকারি চাকরি", icon: Briefcase, count: jobs.length }]
+      : []),
+
+    // Include scholarships if scholarships is in categories
+    ...(categories.some((c) => c && c.id === "scholarships")
+      ? [{ id: "scholarships", label: "স্কলারশিপ", icon: GraduationCap, count: scholarships.length }]
+      : []),
+
+    // Dynamic digital service categories
+    ...categories
+      .filter((c) => c && c.id && c.id !== "welfare" && c.id !== "jobs" && c.id !== "scholarships")
+      .map((c) => {
+        let count = 0;
+        if (c.id === "identity") {
+          count = services.filter((s) => s.category === "identity" || s.category === "aadhaar_pan").length;
+        } else if (c.id === "utility") {
+          count = services.filter((s) => s.category === "utility" || s.category === "certificates").length;
+        } else {
+          count = services.filter((s) => s.category === c.id).length;
+        }
+        return {
+          id: c.id,
+          label: c.label || "ডিজিটাল সেবা",
+          icon: getCategoryIcon(c.iconName),
+          count: count
+        };
+      }),
 
     { id: "categories", label: "বিভাগ পরিচালনা", icon: Grid, count: categories.length },
     { id: "suggestions", label: "সাজেশন ও অভিযোগ", icon: MessageSquare, count: suggestions.length },
-    { id: "settings", label: "এআই সিস্টেম সেটিংস", icon: Settings, count: null }
+    { id: "settings", label: "ব্যানার পরিবর্তন সেটিংস", icon: Settings, count: null }
   ];
 
   return (
@@ -2018,18 +2024,7 @@ export default function AdminPanel({
                             <div className="text-[10.5px] text-slate-450 font-medium truncate max-w-[320px] mt-0.5">{srv.description}</div>
                           </td>
                           <td className="px-4 py-3 font-bold text-slate-800">
-                            {
-                              {
-                                welfare: "সরকারি প্রকল্প",
-                                jobs: "সরকারি চাকরি",
-                                scholarships: "স্কলারশিপ",
-                                identity: "পরিচয় ও কার্ড",
-                                utility: "শংসাপত্র",
-                                health: "হেলথ ও বিমা",
-                                land: "জমি ও পরচা",
-                                cyber_cafe: "সাইবার ক্যাফে"
-                              }[srv.category] || srv.categoryName || srv.category
-                            }
+                            {categories.find((c) => c.id === srv.category || (srv.category === "aadhaar_pan" && c.id === "identity") || (srv.category === "certificates" && c.id === "utility"))?.label || srv.categoryName || srv.category}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
@@ -2486,10 +2481,10 @@ export default function AdminPanel({
               <div className="border-b border-slate-100 pb-4">
                 <h3 className="text-sm md:text-base font-extrabold text-slate-800 flex items-center gap-2">
                   <Settings className="h-5 w-5 text-bengali-orange animate-spin-slow" />
-                  সিস্টেম কনফিগারেশন ও কালার/পটভূমি সেটিংস (System & Background Settings)
+                  ব্যানার ও পটভূমি সেটিংস (Banner & Background Settings)
                 </h3>
                 <p className="text-[11px] text-slate-500 font-medium mt-1">
-                  এখানে আপনার এআই চ্যাট কনফিগার করুন এবং ল্যান্ডিং পেজের হিরো ব্যানার ব্যাকগ্রাউন্ডের ছবি সম্পূর্ণ নিজের মতো পরিবর্তন করুন।
+                  এখানে ল্যান্ডিং পেজের হিরো ব্যানার ব্যাকগ্রাউন্ডের ছবি সম্পূর্ণ নিজের মতো পরিবর্তন করুন।
                 </p>
               </div>
 
@@ -2499,7 +2494,7 @@ export default function AdminPanel({
                   কীভাবে সেটিংস পরিবর্তন করবেন?
                 </h4>
                 <p className="leading-relaxed font-semibold text-slate-650">
-                  নিচে আপনার এআই চ্যাটবটের জন্য এপিআই কী টাইপ করতে পারেন এবং ল্যান্ডিং পেজে যে প্রধান ছবি রয়েছে তা পরিবর্তন করতে ফাইল আপলোড বা প্রি-সেট ব্যবহার করতে পারেন। সেভ করার পর এটি রিয়েল-টাইমে সেভ হয়ে যাবে।
+                  ল্যান্ডিং পেজে যে প্রধান ছবি রয়েছে তা পরিবর্তন করতে নিচের প্রি-সেটগুলো ব্যবহার করতে পারেন অথবা কাস্টম ছবি আপলোড করতে পারেন। সেভ করার পর এটি অবিলম্বে আপডেট ও সক্রিয় হয়ে যাবে।
                 </p>
               </div>
 
@@ -2512,7 +2507,7 @@ export default function AdminPanel({
                     heroBannerUrl: heroBannerUrlInput
                   });
                   if (success) {
-                    showNotification("সিস্টেম সেটিংস ও ব্যানার ইমেজ সফলভাবে সংরক্ষণ করা হয়েছে!");
+                    showNotification("ব্যানার ইমেজ সফলভাবে সংরক্ষণ করা হয়েছে!");
                   } else {
                     showNotification("সেটিংস সেভ করতে ব্যর্থ হয়েছে।");
                   }
@@ -2523,36 +2518,9 @@ export default function AdminPanel({
                 }
               }} className="space-y-6">
                 
-                {/* SECTION 1: AI ASSISTANT CONFIG */}
-                <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 space-y-4">
-                  <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider block">১. এআই অ্যাসিস্ট্যান্ট চ্যাটবট সেটিংস</h4>
-                  <div>
-                    <label className="text-[11px] font-extrabold text-slate-600 block mb-1.5">Gemini API Key (সহকারী চ্যাট এর জন্য)</label>
-                    <div className="relative rounded-lg shadow-sm">
-                      <input
-                        type={showApiKey ? "text" : "password"}
-                        value={apiKeyInput}
-                        onChange={(e) => setApiKeyInput(e.target.value)}
-                        placeholder="AIZAsy..."
-                        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-bengali-orange pr-20 animate-fade-in"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="absolute inset-y-0 right-0 px-3 flex items-center text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
-                      >
-                        {showApiKey ? "লুকান" : "দেখুন"}
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 font-semibold">
-                      * এই কাস্টম API কী বাংলায় উত্তর দেওয়ার জন্য Google Gemini SDK (gemini-3.5-flash) দ্বারা সরাসরি ব্যবহৃত হয়।
-                    </p>
-                  </div>
-                </div>
-
-                {/* SECTION 2: HERO BANNER IMAGE SETTINGS */}
+                {/* SECTION: HERO BANNER IMAGE SETTINGS */}
                 <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 space-y-5">
-                  <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider block">২. ল্যান্ডিং পেজ হিরো ব্যানার পরিবর্তন করুন</h4>
+                  <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider block">ল্যান্ডিং পেজ হিরো ব্যানার পরিবর্তন করুন</h4>
                   
                   {/* Preset Banner Grid with thumbnails */}
                   <div className="space-y-2">

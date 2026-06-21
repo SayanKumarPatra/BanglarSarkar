@@ -8,3 +8,17 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Automatically register the service worker on load
+if ('serviceWorker' in navigator && (import.meta as any).env?.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((registration) => {
+        console.log('ServiceWorker registered successfully with scope: ', registration.scope);
+      })
+      .catch((error) => {
+        console.error('ServiceWorker registration failed: ', error);
+      });
+  });
+}
+

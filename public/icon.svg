@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <defs>
+    <!-- Vibrant green gradient to match the uploaded logo -->
+    <linearGradient id="logoGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0F766E" />
+      <stop offset="40%" stop-color="#15803D" />
+      <stop offset="100%" stop-color="#22C55E" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main rounded square with modern iOS-like squircle shape -->
+  <!-- Top-right corner is elegantly spaced for the separate dot -->
+  <rect x="8" y="14" width="94" height="94" rx="28" fill="url(#logoGrad)" />
+
+  <!-- The stylized double checkmark (white bold strokes) -->
+  <!-- Upper Checkmark -->
+  <path d="M 26,52 L 48,74 L 88,28" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="11" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Lower Checkmark -->
+  <path d="M 28,66 L 48,87 L 86,43" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="11" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Green Dot on the top-right matching the logo signature -->
+  <circle cx="106" cy="18" r="8" fill="#22C55E" stroke="#15803D" stroke-width="1" />
+</svg>

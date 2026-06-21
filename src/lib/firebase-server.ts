@@ -109,6 +109,7 @@ const localMemoryStore = {
   categories: [...DEFAULT_CATEGORIES] as CategoryItem[],
   settings: { geminiApiKey: "" } as SystemSettings,
   suggestions: [] as Suggestion[],
+  hasSeeded: false,
 };
 
 function saveLocalStore() {
@@ -116,6 +117,54 @@ function saveLocalStore() {
     writeFileSync(DATA_STORE_PATH, JSON.stringify(localMemoryStore, null, 2), "utf-8");
   } catch (err) {
     console.error("[Data Store] Failed to save data store:", err);
+  }
+}
+
+async function shouldBypassSeed(): Promise<boolean> {
+  if (localMemoryStore.hasSeeded) {
+    return true;
+  }
+  if (rtdb) {
+    try {
+      const snap = await rtdbGet(ref(rtdb, "system_metadata/seeded"));
+      if (snap.exists() && snap.val() === true) {
+        localMemoryStore.hasSeeded = true;
+        saveLocalStore();
+        return true;
+      }
+    } catch (_) {}
+  }
+  if (db) {
+    try {
+      const docSnap = await getDocs(collection(db, "system_metadata"));
+      let found = false;
+      docSnap.forEach(d => {
+        if (d.id === "status" && d.data()?.seeded) {
+          found = true;
+        }
+      });
+      if (found) {
+        localMemoryStore.hasSeeded = true;
+        saveLocalStore();
+        return true;
+      }
+    } catch (_) {}
+  }
+  return false;
+}
+
+async function setSeeded(): Promise<void> {
+  localMemoryStore.hasSeeded = true;
+  saveLocalStore();
+  if (rtdb) {
+    try {
+      await rtdbSet(ref(rtdb, "system_metadata/seeded"), true);
+    } catch (_) {}
+  }
+  if (db) {
+    try {
+      await setDoc(doc(db, "system_metadata", "status"), { seeded: true });
+    } catch (_) {}
   }
 }
 
@@ -131,6 +180,7 @@ function loadLocalStore() {
       if (parsed.categories) localMemoryStore.categories = parsed.categories;
       if (parsed.settings) localMemoryStore.settings = parsed.settings;
       if (parsed.suggestions) localMemoryStore.suggestions = parsed.suggestions;
+      if (parsed.hasSeeded !== undefined) localMemoryStore.hasSeeded = parsed.hasSeeded;
       console.log("[Data Store] Loaded persistent local store from disk:", DATA_STORE_PATH);
     } else {
       saveLocalStore();
@@ -276,6 +326,10 @@ export async function getSchemes(): Promise<Scheme[]> {
         }
       }
       
+      if (await shouldBypassSeed()) {
+        return [];
+      }
+      
       // If we got here, snapshot doesn't exist or is empty. Seed RTDB directly from local store!
       console.log("[Firebase RTDB] Seeding schemes into Realtime Database from active local store...");
       const seedSource = localMemoryStore.schemes && localMemoryStore.schemes.length > 0 
@@ -299,6 +353,7 @@ export async function getSchemes(): Promise<Scheme[]> {
         };
         await rtdbSet(ref(rtdb, `schemes/${item.id}`), payload);
       }
+      await setSeeded();
       return seedSource;
     } catch (err) {
       console.error("[Firebase RTDB] Error in getSchemes:", err);
@@ -312,6 +367,10 @@ export async function getSchemes(): Promise<Scheme[]> {
       const qSnapshot = await getDocs(colRef);
       
       if (qSnapshot.empty) {
+        if (await shouldBypassSeed()) {
+          return [];
+        }
+        
         console.log("Seeding schemes into Firestore form active local store...");
         const seedSource = localMemoryStore.schemes && localMemoryStore.schemes.length > 0 
           ? localMemoryStore.schemes 
@@ -343,6 +402,7 @@ export async function getSchemes(): Promise<Scheme[]> {
             }
           }
         }
+        await setSeeded();
         return seedSource;
       }
 
@@ -448,6 +508,10 @@ export async function getJobs(): Promise<Job[]> {
         }
       }
       
+      if (await shouldBypassSeed()) {
+        return [];
+      }
+      
       // Seed RTDB directly from local store!
       console.log("[Firebase RTDB] Seeding jobs into Realtime Database from active local store...");
       const seedSource = localMemoryStore.jobs && localMemoryStore.jobs.length > 0
@@ -471,6 +535,7 @@ export async function getJobs(): Promise<Job[]> {
         };
         await rtdbSet(ref(rtdb, `jobs/${item.id}`), payload);
       }
+      await setSeeded();
       return seedSource;
     } catch (err) {
       console.error("[Firebase RTDB] Error in getJobs:", err);
@@ -484,6 +549,10 @@ export async function getJobs(): Promise<Job[]> {
       const qSnapshot = await getDocs(colRef);
       
       if (qSnapshot.empty) {
+        if (await shouldBypassSeed()) {
+          return [];
+        }
+        
         console.log("Seeding jobs into Firestore from active local store...");
         const seedSource = localMemoryStore.jobs && localMemoryStore.jobs.length > 0
           ? localMemoryStore.jobs
@@ -515,6 +584,7 @@ export async function getJobs(): Promise<Job[]> {
             }
           }
         }
+        await setSeeded();
         return seedSource;
       }
 
@@ -619,6 +689,10 @@ export async function getScholarships(): Promise<Scholarship[]> {
         }
       }
       
+      if (await shouldBypassSeed()) {
+        return [];
+      }
+      
       // Seed RTDB directly from local store!
       console.log("[Firebase RTDB] Seeding scholarships into Realtime Database from active local store...");
       const seedSource = localMemoryStore.scholarships && localMemoryStore.scholarships.length > 0
@@ -638,6 +712,7 @@ export async function getScholarships(): Promise<Scholarship[]> {
         };
         await rtdbSet(ref(rtdb, `scholarships/${item.id}`), payload);
       }
+      await setSeeded();
       return seedSource;
     } catch (err) {
       console.error("[Firebase RTDB] Error in getScholarships:", err);
@@ -651,6 +726,10 @@ export async function getScholarships(): Promise<Scholarship[]> {
       const qSnapshot = await getDocs(colRef);
       
       if (qSnapshot.empty) {
+        if (await shouldBypassSeed()) {
+          return [];
+        }
+        
         console.log("Seeding scholarships into Firestore from active local store...");
         const seedSource = localMemoryStore.scholarships && localMemoryStore.scholarships.length > 0
           ? localMemoryStore.scholarships
@@ -678,6 +757,7 @@ export async function getScholarships(): Promise<Scholarship[]> {
             }
           }
         }
+        await setSeeded();
         return seedSource;
       }
 
@@ -778,6 +858,10 @@ export async function getServices(): Promise<ServiceItem[]> {
         }
       }
       
+      if (await shouldBypassSeed()) {
+        return [];
+      }
+      
       // Seed RTDB directly from local store!
       console.log("[Firebase RTDB] Seeding services into Realtime Database from active local store...");
       const seedSource = localMemoryStore.services && localMemoryStore.services.length > 0
@@ -800,6 +884,7 @@ export async function getServices(): Promise<ServiceItem[]> {
         };
         await rtdbSet(ref(rtdb, `services/${item.id}`), payload);
       }
+      await setSeeded();
       return seedSource;
     } catch (err) {
       console.error("[Firebase RTDB] Error in getServices:", err);
@@ -813,6 +898,10 @@ export async function getServices(): Promise<ServiceItem[]> {
       const qSnapshot = await getDocs(colRef);
       
       if (qSnapshot.empty) {
+        if (await shouldBypassSeed()) {
+          return [];
+        }
+        
         console.log("Seeding services into Firestore from active local store...");
         const seedSource = localMemoryStore.services && localMemoryStore.services.length > 0
           ? localMemoryStore.services
@@ -843,6 +932,7 @@ export async function getServices(): Promise<ServiceItem[]> {
             }
           }
         }
+        await setSeeded();
         return seedSource;
       }
 
@@ -946,6 +1036,10 @@ export async function getCategories(): Promise<CategoryItem[]> {
         }
       }
       
+      if (await shouldBypassSeed()) {
+        return [];
+      }
+      
       // Seed RTDB directly from local store!
       console.log("[Firebase RTDB] Seeding categories into Realtime Database from active local store...");
       const seedSource = localMemoryStore.categories && localMemoryStore.categories.length > 0
@@ -954,6 +1048,7 @@ export async function getCategories(): Promise<CategoryItem[]> {
       for (const cat of seedSource) {
         await rtdbSet(ref(rtdb, `categories/${cat.id}`), cat);
       }
+      await setSeeded();
       return seedSource;
     } catch (err) {
       console.error("[Firebase RTDB] Error in getCategories:", err);
@@ -967,6 +1062,10 @@ export async function getCategories(): Promise<CategoryItem[]> {
       const qSnapshot = await getDocs(colRef);
       
       if (qSnapshot.empty) {
+        if (await shouldBypassSeed()) {
+          return [];
+        }
+        
         // Seed first
         const seedSource = localMemoryStore.categories && localMemoryStore.categories.length > 0
           ? localMemoryStore.categories
@@ -983,6 +1082,7 @@ export async function getCategories(): Promise<CategoryItem[]> {
             }
           }
         }
+        await setSeeded();
         return seedSource;
       }
 

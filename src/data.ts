@@ -89,7 +89,7 @@ export interface Suggestion {
 export const INITIAL_SCHEMES: Scheme[] = [
   {
     id: "s1",
-    title: "লক্ষ্মীর ভাণ্ডার প্রকল্প",
+    title: "Lakshmir Bhandar Portal",
     titleEn: "Lakshmir Bhandar Scheme",
     category: "women",
     categoryName: "মহিলা ও শিশু কল্যাণ",
@@ -108,7 +108,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s2",
-    title: "কৃষক বন্ধু (নতুন) প্রকল্প",
+    title: "Krishak Bandhu Scheme",
     titleEn: "Krishak Bandhu Scheme",
     category: "farmers",
     categoryName: "কৃষক কল্যাণ",
@@ -126,7 +126,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s3",
-    title: "স্বাস্থ্য সাথী কার্ড প্রকল্প",
+    title: "Swasthya Sathi Card Portal",
     titleEn: "Swasthya Sathi Scheme",
     category: "senior",
     categoryName: "পরিবার ও প্রবীণ কল্যাণ",
@@ -144,7 +144,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s4",
-    title: "স্টুডেন্ট ক্রেডিট কার্ড প্রকল্প",
+    title: "Student Credit Card Scheme",
     titleEn: "Student Credit Card Scheme",
     category: "students",
     categoryName: "শিক্ষার্থী কল্যাণ",
@@ -162,7 +162,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s5",
-    title: "কন্যাশ্রী প্রকল্প (কে-১ ও কে-২)",
+    title: "Kanyashree Portal (K1 / K2)",
     titleEn: "Kanyashree Prakalpa",
     category: "students",
     categoryName: "শিক্ষার্থী কল্যাণ",
@@ -180,7 +180,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s6",
-    title: "রূপশ্রী প্রকল্প",
+    title: "Rupashree Portal",
     titleEn: "Rupashree Prakalpa",
     category: "women",
     categoryName: "মহিলা কল্যাণ",
@@ -198,7 +198,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s7",
-    title: "প্রবীণ ভাতা বা বার্ধক্য পেনশন",
+    title: "Old Age Pension Scheme",
     titleEn: "Old Age Pension Scheme",
     category: "senior",
     categoryName: "প্রবীণ কল্যাণ",
@@ -216,7 +216,7 @@ export const INITIAL_SCHEMES: Scheme[] = [
   },
   {
     id: "s8",
-    title: "বিনামূল্যে সামাজিক সুরক্ষা যোজনা (BMSSY)",
+    title: "Samajik Suraksha Yojana (BM-SSY)",
     titleEn: "Bina Mulya Samajik Suraksha Yojana",
     category: "workers",
     categoryName: "শ্রমিক কল্যাণ",
@@ -238,7 +238,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // West Bengal Cards & Core Documents (identity)
   {
     id: "srv1",
-    title: "আধার কার্ড",
+    title: "Aadhaar Services",
     subtitle: "Aadhaar Card",
     category: "identity",
     categoryName: "পরিচয় ও কার্ড",
@@ -255,7 +255,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv2",
-    title: "প্যান কার্ড",
+    title: "PAN Card",
     subtitle: "PAN Card Registration",
     category: "identity",
     categoryName: "পরিচয় ও কার্ড",
@@ -272,7 +272,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv7",
-    title: "ভোটার কার্ড",
+    title: "Voter Services",
     subtitle: "Voter Card / e-EPIC",
     category: "identity",
     categoryName: "পরিচয় ও কার্ড",
@@ -289,7 +289,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv8",
-    title: "রেশন কার্ড",
+    title: "Ration Card Services",
     subtitle: "Ration Card (Khadya)",
     category: "identity",
     categoryName: "পরিচয় ও কার্ড",
@@ -297,7 +297,7 @@ export const SERVICES_DATA: ServiceItem[] = [
     btnText: "খাদ্যসাথী",
     description: "পশ্চিমবঙ্গ খাদ্য ও সরবরাহ মন্ত্রকের অধীনে ডিজিটাল রেশন কার্ড স্ট্যাটাস, মোবাইল লিঙ্কিং ও দোকান বদলের পোর্টাল।",
     steps: [
-      "খাদ্য দপ্তরের অফিসিয়াল পোর্টালে গিয়ে 'Citizen Card Status' ট্যাব খুলুন।",
+      "খাদ্যের দপ্তরের অফিসিয়াল পোর্টালে গিয়ে 'Citizen Card Status' ট্যাব খুলুন।",
       "আধার কার্ড সংযুক্ত করতে 'Link Aadhaar with Ration Card' নির্বাচন করুন।",
       "ওটিপি দিয়ে মেম্বার ট্রান্সফার বা নতুন সদস্যের আবেদন সম্পূর্ণ করুন।",
       "প্রয়োজনীয় ই-রেশন কার্ড ডাউনলোড করে তৎক্ষণাৎ চাল-গম তুলুন বিনা মূল্যে।"
@@ -306,7 +306,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv9",
-    title: "পাসপোর্ট",
+    title: "Passport Seva",
     subtitle: "Passport Services",
     category: "identity",
     categoryName: "পরিচয় ও কার্ড",
@@ -323,7 +323,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv10",
-    title: "ড্রাইভিং লাইসেন্স",
+    title: "Driving Licence",
     subtitle: "Driving License",
     category: "identity",
     categoryName: "পরিচয় ও কার্ড",
@@ -342,7 +342,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // West Bengal Certificates (utility)
   {
     id: "srv3",
-    title: "জন্ম শংসাপত্র",
+    title: "Birth Certificate",
     subtitle: "Birth Certificate",
     category: "utility",
     categoryName: "শংসাপত্র",
@@ -359,7 +359,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv4",
-    title: "জাতিগত শংসাপত্র",
+    title: "Caste Certificate",
     subtitle: "Caste Certificate",
     category: "utility",
     categoryName: "শংসাপত্র",
@@ -376,7 +376,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv5",
-    title: "আয় শংসাপত্র",
+    title: "Income Certificate",
     subtitle: "Income Certificate",
     category: "utility",
     categoryName: "শংসাপত্র",
@@ -393,7 +393,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv11",
-    title: "মৃত্যু শংসাপত্র",
+    title: "Death Certificate",
     subtitle: "Death Certificate",
     category: "utility",
     categoryName: "শংসাপত্র",
@@ -412,7 +412,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // West Bengal Government Jobs & Exams (jobs)
   {
     id: "job_psc",
-    title: "WBPSC ক্লার্টশিপ ও বিবিধ",
+    title: "West Bengal Government Jobs (WBPSC)",
     subtitle: "PSC Clerkship, Miscellaneous",
     category: "jobs",
     categoryName: "सरकारी नौकरी",
@@ -429,7 +429,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "job_police",
-    title: "পশ্চিমবঙ্গ পুলিশ কনস্টেবল",
+    title: "WBP Recruitment Services",
     subtitle: "WBP Constable Recruit",
     category: "jobs",
     categoryName: "सरकारी नौकरी",
@@ -446,7 +446,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "job_tet",
-    title: "WB Primary TET ও শিক্ষকতা",
+    title: "Primary Teacher Eligibility Test (TET)",
     subtitle: "Primary Teacher Eligibility Test",
     category: "jobs",
     categoryName: "सरकारी नौकरी",
@@ -463,7 +463,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "job_ssc",
-    title: "WB School Service Commission",
+    title: "School Service Commission (WBSSC)",
     subtitle: "Assistant Teacher & Group C/D",
     category: "jobs",
     categoryName: "सरकारी नौकरी",
@@ -480,7 +480,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "job_msc",
-    title: "মিউনিসিপ্যাল কর্পোরেশন চাকরি",
+    title: "Municipal Service Commission (MSC)",
     subtitle: "Municipal Service Recruit",
     category: "jobs",
     categoryName: "सरकारी नौकरी",
@@ -497,7 +497,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "job_health",
-    title: "স্বাস্থ্য দপ্তর কর্মী নিয়োগ",
+    title: "Health Recruitment Board (WBHRB)",
     subtitle: "WB Health Recruitment Board",
     category: "jobs",
     categoryName: "सरकारी नौकरी",
@@ -516,7 +516,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // Student Scholarships (scholarships)
   {
     id: "sc_svmcm",
-    title: "স্বামী বিবেকানন্দ স্কলারশিপ",
+    title: "Swami Vivekananda Scholarship (SVMCM)",
     subtitle: "SVMCM Merit Scholarship",
     category: "scholarships",
     categoryName: "স্কলারশিপ",
@@ -533,7 +533,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "sc_oasis",
-    title: "ওএসিস কাস্ট স্কলারশিপ",
+    title: "OASIS Scholarship Portal",
     subtitle: "OASIS SC/ST/OBC Relief",
     category: "scholarships",
     categoryName: "স্কলারশিপ",
@@ -543,14 +543,14 @@ export const SERVICES_DATA: ServiceItem[] = [
     steps: [
       "ওএসিস স্কলারশিপ পোর্টাল (oasis.gov.in) ওপেন করে 'Student Registration' করুন।",
       "আপনার জেলা ও কাস্ট সার্টিফিকেটের নম্বর দিয়ে প্রোফাইল রেজিস্টার করুন।",
-      "ইনституটিউট প্রোফাইল ও কোর্স বিবরণ পূরণ করে আবেদন প্রিন্টআউট নিন।",
+      "ইনституটিউট প্রোফাইল ও курс বিবরণ পূরণ করে আবেদন প্রিন্টআউট নিন।",
       "প্রিন্টআউট ও প্রয়োজনীয় প্রশংসাপত্র প্রতিষ্ঠানে ভেরিফিকেশনের জন্য জমা দিন।"
     ],
     officialUrl: "https://oasis.gov.in"
   },
   {
     id: "sc_aikyashree",
-    title: "ঐক্যশ্রী সংখ্যালঘু স্কলারশিপ",
+    title: "Aikyashree Scholarship Portal",
     subtitle: "Aikyashree Minorities",
     category: "scholarships",
     categoryName: "স্কলারশিপ",
@@ -567,7 +567,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "sc_nabanna",
-    title: "নবান্ন মুখ্যমন্ত্রী ত্রাণ তহবিল",
+    title: "Nabanna CM Relief Fund",
     subtitle: "Chief Minister's Relief Fund",
     category: "scholarships",
     categoryName: "স্কলারশিপ",
@@ -586,7 +586,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // Social Welfare Schemes (welfare)
   {
     id: "s_lakshmir",
-    title: "লক্ষ্মীর ভাণ্ডার প্রকল্প",
+    title: "Lakshmir Bhandar Portal",
     subtitle: "Lakshmir Bhandar WB",
     category: "welfare",
     categoryName: "সরকারি প্রকল্প",
@@ -603,7 +603,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "s_krishak",
-    title: "কৃষক বন্ধু (নতুন) প্রকল্প",
+    title: "Krishak Bandhu Scheme",
     subtitle: "Krishak Bandhu Financial Aid",
     category: "welfare",
     categoryName: "সরকারি প্রকল্প",
@@ -620,7 +620,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "s_kanyashree",
-    title: "কন্যাশ্রী প্রকল্প (K1/K2)",
+    title: "Kanyashree Portal",
     subtitle: "Kanyashree Girl Support",
     category: "welfare",
     categoryName: "সরকারি প্রকল্প",
@@ -637,7 +637,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "s_rupashree",
-    title: "রূপশ্রী বিবাহের অনুদান",
+    title: "Rupashree Portal",
     subtitle: "Rupashree Marriage Grant",
     category: "welfare",
     categoryName: "সরকারি প্রকল্প",
@@ -654,7 +654,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "s_ssy",
-    title: "সামাজিক সুরক্ষা যোজনা (BM-SSY)",
+    title: "Samajik Suraksha Yojana (BM-SSY)",
     subtitle: "Bina Mulya Samajik Suraksha",
     category: "welfare",
     categoryName: "সরকারি প্রকল্প",
@@ -673,7 +673,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // West Bengal Land Records (land)
   {
     id: "land_record",
-    title: "বাংলারভূমি পরচা ও খতিয়ান",
+    title: "Land Records (Banglarbhumi)",
     subtitle: "Banglarbhumi Land Records",
     category: "land",
     categoryName: "জমি ও পরচা",
@@ -690,7 +690,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "land_deed",
-    title: "দলিল পঞ্জীকরণ ও রেজিস্ট্রেশন",
+    title: "Land Deed Registration",
     subtitle: "Search & Register Deed",
     category: "land",
     categoryName: "জমি ও পরচা",
@@ -707,7 +707,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "land_mutation",
-    title: "মিউটেশন ও কনভার্সন",
+    title: "Mutation & Conversion",
     subtitle: "Mutation & Conversion",
     category: "land",
     categoryName: "জমি ও পরচা",
@@ -724,7 +724,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "land_revenue",
-    title: "খাজনা ও অনলাইন ল্যান্ড ট্যাক্স",
+    title: "Land Revenue (Khajna)",
     subtitle: "Land Revenue (Khajna)",
     category: "land",
     categoryName: "জমি ও পরচা",
@@ -743,7 +743,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   // West Bengal Digital Health Services (health)
   {
     id: "srv12",
-    title: "ABHA হেলথ আইডি",
+    title: "ABHA Card (Digital Health ID)",
     subtitle: "Digital Health ID",
     category: "health",
     categoryName: "ডিজিটাল হেলথ কার্ড",
@@ -760,7 +760,7 @@ export const SERVICES_DATA: ServiceItem[] = [
   },
   {
     id: "srv_swasthya",
-    title: "স্বাস্থ্য সাথী কার্ড",
+    title: "Swasthya Sathi Card Portal",
     subtitle: "Swasthya Sathi",
     category: "health",
     categoryName: "ডিজিটাল হেলথ কার্ড",
@@ -780,7 +780,7 @@ export const SERVICES_DATA: ServiceItem[] = [
 export const INITIAL_SCHOLARSHIPS: Scholarship[] = [
   {
     id: "sc1",
-    title: "স্বামী বিবেকানন্দ মেরিট-কাম-মিনস স্কলারশিপ (SVMCM)",
+    title: "Swami Vivekananda Scholarship (SVMCM)",
     amount: "বার্ষিক ১২,০০০ টাকা থেকে ৯৬,০০০ টাকা পর্যন্ত (শ্রেণী ও কোর্স ভিত্তিক)",
     eligibility: "পশ্চিমবঙ্গের স্থায়ী বাসিন্দা এবং মাধ্যমিক/উচ্চ মাধ্যমিক বা স্নাতক স্তরে ন্যূনতম ৬০% নম্বর প্রাপ্ত শিক্ষার্থী, যার পারিবারিক বার্ষিক আয় ২.৫ লক্ষ টাকার নিচে।",
     lastDate: "২০২৬-১২-৩১",
@@ -789,7 +789,7 @@ export const INITIAL_SCHOLARSHIPS: Scholarship[] = [
   },
   {
     id: "sc2",
-    title: "ওএসিস স্কলারশিপ (OASIS Program WB)",
+    title: "OASIS Scholarship Portal",
     amount: "বার্ষিক ৫,০০০ টাকা থেকে ২০,০০০ টাকা পর্যন্ত (শ্রেণী ও হোস্টেল অবস্থান ভিত্তিক)",
     eligibility: "রাজ্যের তপশিলি জাতি (SC), তপশিলি উপজাতি (ST) এবং ওবিসি (OBC) সম্প্রদায়ভুক্ত ছাত্রছাত্রীদের জন্য যারা পোস্ট-মেট্রিক নিয়ে পড়াশোনা করছেন।",
     lastDate: "২০২৬-০৯-৩০",
@@ -798,7 +798,7 @@ export const INITIAL_SCHOLARSHIPS: Scholarship[] = [
   },
   {
     id: "sc3",
-    title: "ঐক্যশ্রী সংখ্যালঘু ছাত্র স্কলারশিপ যোজনা",
+    title: "Aikyashree Scholarship Portal",
     amount: "বাৎসরিক ৪,৮০০ টাকা থেকে ২২,০০০ টাকা পর্যন্ত (অগ্রাধিকার ভিত্তিতে)",
     eligibility: "পশ্চিমবঙ্গের সংখ্যালঘু মুসলিম, শিখ, খ্রিস্টান, বৌদ্ধ, পার্সি বা জৈন শিক্ষার্থী এবং বিগত বার্ষিক পরীক্ষায় ন্যূনতম ৫০% নম্বর প্রাপক।",
     lastDate: "২০২৬-০৯-১৫",
@@ -807,7 +807,7 @@ export const INITIAL_SCHOLARSHIPS: Scholarship[] = [
   },
   {
     id: "sc4",
-    title: "জাতীয় স্কলারশিপ পোর্টাল (NSP) অনুদান",
+    title: "National Scholarship Portal (NSP)",
     amount: "বাৎসরিক ১০,০০০ টাকা থেকে শুরু করে প্রফেশনাল কোর্সে ২৫,০০০ টাকা পর্যন্ত",
     eligibility: "কেন্দ্রীয় সরকারের নির্ধারিত গাইডলাইন অনুযায়ী অনগ্রসর ও বিশেষ প্রতিভাবান দরিদ্র ছাত্রছাত্রী।",
     lastDate: "২০২৬-১০-৩০",
@@ -819,7 +819,7 @@ export const INITIAL_SCHOLARSHIPS: Scholarship[] = [
 export const INITIAL_JOBS: Job[] = [
   {
     id: "job_psc",
-    title: "WBPSC ক্লার্কশিপ ও বিবিধ",
+    title: "West Bengal Government Jobs (WBPSC)",
     subtitle: "PSC Clerkship, Miscellaneous",
     category: "wbpsc",
     categoryName: "পিএসসি নিয়োগ",
@@ -832,7 +832,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: "job_police",
-    title: "পশ্চিমবঙ্গ পুলিশ কনস্টেবল",
+    title: "WBP Recruitment Services",
     subtitle: "WBP Constable Recruit",
     category: "police",
     categoryName: "পুলিশ রিক্রুটমেন্ট",
@@ -845,7 +845,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: "job_tet",
-    title: "WB Primary TET ও শিক্ষকতা",
+    title: "Primary Teacher Eligibility Test (TET)",
     subtitle: "Primary Teacher Eligibility Test",
     category: "wbpsc",
     categoryName: "প্রাথমিক শিক্ষকতা",
@@ -858,7 +858,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: "job_ssc",
-    title: "WB School Service Commission",
+    title: "School Service Commission (WBSSC)",
     subtitle: "Assistant Teacher & Group C/D",
     category: "ssc",
     categoryName: "স্কুল সার্ভিস কমিশন",
@@ -871,7 +871,7 @@ export const INITIAL_JOBS: Job[] = [
   },
   {
     id: "job_msc",
-    title: "মিউনিসিপ্যাল কর্পোরেশন চাকরি",
+    title: "Municipal Service Commission (MSC)",
     subtitle: "Municipal Service Recruit",
     category: "private",
     categoryName: "পৌরসভা নিয়োগ",
@@ -879,12 +879,12 @@ export const INITIAL_JOBS: Job[] = [
     qualification: "মাধ্যমিক/উচ্চ মাধ্যমিক বা সংশ্লিষ্ট ট্রেডে ডিপ্লোমা বা স্নাতক",
     lastDate: "২০২৬-০৭-৩১",
     officialUrl: "https://www.mscwb.org",
-    salary: "১৮,০০০ - ৪৮,০০ টাকা",
+    salary: "১৮,০০০ - ৪৮, ০০ টাকা",
     isPopular: false
   },
   {
     id: "job_health",
-    title: "স্বাস্থ্য দপ্তর কর্মী নিয়োগ",
+    title: "Health Recruitment Board (WBHRB)",
     subtitle: "WB Health Recruitment Board",
     category: "banking",
     categoryName: "স্বাস্থ্য নিয়োগ",
@@ -900,32 +900,32 @@ export const INITIAL_JOBS: Job[] = [
 export const INITIAL_UPDATES: AppUpdate[] = [
   {
     id: "up1",
-    title: "লক্ষ্মীর ভাণ্ডার প্রকল্পের জন্য দুয়ারে সরকার ক্যাম্পের নতুন ক্যাম্প ডেট প্রকাশিত হয়েছে",
+    title: "Lakshmir Bhandar প্রকল্পের জন্য দুয়ারে সরকার ক্যাম্পের নতুন ক্যাম্প ডেট প্রকাশিত হয়েছে",
     date: "২০২৬-০৬-১২",
     category: "Scheme"
   },
   {
     id: "up2",
-    title: "পশ্চিমবঙ্গ পাবলিক সার্ভিস কমিশন (WBPSC) ফুড এসআই পরীক্ষার ফলাফল আগামী সপ্তাহে প্রকাশের সম্ভাবনা",
+    title: "West Bengal Government Jobs (WBPSC) ফুড এসআই পরীক্ষার ফলাফল আগামী সপ্তাহে প্রকাশের সম্ভাবনা",
     date: "২০২৬-০৬-১৫",
     category: "General"
   },
   {
     id: "up3",
-    title: "স্বামী বিবেকানন্দ মেরিট কাম মিন্স স্কলারশিপ ২০২৬ পোর্টাল আবেদন নেওয়ার জন্য উন্মুক্ত করা হয়েছে",
+    title: "Swami Vivekananda Scholarship (SVMCM) ২০২৬ পোর্টাল আবেদন নেওয়ার জন্য উন্মুক্ত করা হয়েছে",
     date: "২০২৬-০৬-১০",
     category: "Scholarship"
   },
   {
     id: "up4",
-    title: "পশ্চিমবঙ্গ পুলিশের মোট ৮,৪২০টি শূন্যপদে অফিশিয়াল বিস্তারিত সিলেবাস নোটিশ জারি হয়েছে",
+    title: "WBP Recruitment Services এর মোট ৮,৪২০টি শূন্যপদে অফিশিয়াল বিস্তারিত সিলেবাস নোটিশ জারি হয়েছে",
     date: "২০২৬-০৬-১৪",
     category: "Job"
   },
   {
     id: "up5",
-    title: "আধার এবং প্যান কার্ডের বায়োমেট্রিক ফ্রিতে আপডেট করার লাস্ট ডেট আরও ৩০ দিন বৃদ্ধি করা হল",
-    date: "২০26-০৬-০৮",
+    title: "Aadhaar Services এবং PAN Card এর বায়োমেট্রিক ফ্রিতে আপডেট করার লাস্ট ডেট আরও ৩০ দিন বৃদ্ধি করা হল",
+    date: "২০২৬-০৬-০৮",
     category: "General"
   }
 ];

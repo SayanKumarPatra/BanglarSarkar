@@ -69,10 +69,131 @@ import { ref as rtdbRef, onValue as onRtdbValue, set as rtdbSet } from "firebase
 import { db, rtdb, isPlaceholderFirebase } from "./lib/firebase";
 
 import AdminPanel from "./components/AdminPanel";
+import CyberStudioTools from "./components/CyberStudioTools";
+import DashboardServices from "./components/DashboardServices";
+import DashboardAllLinks from "./components/DashboardAllLinks";
+import DashboardTools from "./components/DashboardTools";
 // @ts-ignore
 import kolkataHeroBanner from "./assets/images/kolkata_hero_banner_1781608902642.jpg";
 // @ts-ignore
 import userLogo from "./assets/images/user_logo.svg";
+
+// Import motion for clean high-fidelity transitions
+import { motion, AnimatePresence } from "motion/react";
+
+const BENGALI_TO_ENGLISH_TITLES: { [key: string]: string } = {
+  // Common WB Schemes and services
+  "লক্ষ্মীর ভাণ্ডার": "Lakshmir Bhandar Portal",
+  "লক্ষ্মীর ভান্ডার": "Lakshmir Bhandar Portal",
+  "লক্ষ্মী ভান্ডার": "Lakshmir Bhandar Portal",
+  "লক্ষ্মী ভাণ্ডার": "Lakshmir Bhandar Portal",
+  "কৃষক বন্ধু": "Krishak Bandhu Scheme",
+  "কৃষকবন্ধু": "Krishak Bandhu Scheme",
+  "স্টুডেন্ট ক্রেডিট কার্ড": "Student Credit Card Scheme",
+  "স্টুডেন্ট ক্রেডিট": "Student Credit Card Scheme",
+  "শিক্ষার্থী ক্রেডিট কার্ড": "Student Credit Card Scheme",
+  "কন্যাশ্রী": "Kanyashree Prakalpa (K1/K2)",
+  "কন্যাশ্রী প্রকল্প": "Kanyashree Prakalpa (K1/K2)",
+  "রূপশ্রী": "Rupashree Prakalpa",
+  "রূপশ্রী প্রকল্প": "Rupashree Prakalpa",
+  "স্বাস্থ্য সাথী": "Swasthya Sathi Card Portal",
+  "স্বাস্থ্যসাথী": "Swasthya Sathi Card Portal",
+  "বার্ধক্য ভাতা": "Old Age Pension Scheme",
+  "প্রবীণ পেনশন": "Old Age Pension Scheme",
+  "বিধবা ভাতা": "Widow Pension Scheme",
+  "মানবিক": "Manabik Pension Scheme",
+  "মানবিক প্রকল্প": "Manabik Pension Scheme",
+  "ঐক্যশ্রী": "Aikyashree Scholarship",
+  "ঐক্যশ্রী স্কলারশিপ": "Aikyashree Scholarship",
+  "নবান্ন": "Nabanna CM Relief Fund",
+  "নবান্ন স্কলারশিপ": "Nabanna CM Relief Fund",
+  "ওএসিস": "OASIS Scholarship Portal",
+  "oasis": "OASIS Scholarship Portal",
+  "স্বামী বিবেকানন্দ": "SVMCM Merit Scholarship",
+  "বিবেকানন্দ স্কলারশিপ": "SVMCM Merit Scholarship",
+  "যুবশ্রী": "Yuvashree Scheme",
+  "উৎকর্ষ বাংলা": "Utkarsh Bangla Scheme",
+  "উত্কর্ষ বাংলা": "Utkarsh Bangla Scheme",
+  "গতিধারা": "Gatidhara Scheme",
+  "খাদ্য সাথী": "Khadya Sathi (Digital Ration Card)",
+  "খাদ্যসাথী": "Khadya Sathi (Digital Ration Card)",
+  "রেশন কার্ড": "Ration Card Services",
+  "রেশন": "Ration Card Services",
+  "আধার কার্ড": "Aadhaar Card Services",
+  "আধার": "Aadhaar Card Services",
+  "আধার সেবা": "Aadhaar Card Services",
+  "প্যান কার্ড": "PAN Card Services",
+  "প্যান": "PAN Card Services",
+  "প্যান সেবা": "PAN Card Services",
+  "ভোটার কার্ড": "Voter Card Services",
+  "ভোটার": "Voter Card Services",
+  "ভোটার পোর্টাল": "Voter Card Services",
+  "ড্রাইভিং লাইসেন্স": "Driving Licence Services",
+  "ড্রাইভিং": "Driving Licence Services",
+  "লাইসেন্স": "Licence Services",
+  "পাসপোর্ট": "Passport Seva Portal",
+  "জন্ম শংসাপত্র": "Birth Certificate Services",
+  "জন্ম সার্টিফিকেট": "Birth Certificate Services",
+  "জন্ম তথ্য": "Birth Certificate Services",
+  "মৃত্যু শংসাপত্র": "Death Certificate Services",
+  "মৃত্যু সার্টিফিকেট": "Death Certificate Services",
+  "মৃত্যু রেকর্ড": "Death Certificate Services",
+  "জাতিগত শংসাপত্র": "Caste Certificate Services",
+  "কাস্ট সার্টিফিকেট": "Caste Certificate Services",
+  "আয়ের শংসাপত্র": "Income Certificate Services",
+  "ইনকাম সার্টিফিকেট": "Income Certificate Services",
+  "ইনকাম গাইড": "Income Certificate Services",
+  "বাংলারভূমি": "Banglarbhumi (Land Records)",
+  "জমির পরচা": "Land Records (Jomir Porcha)",
+  "জমির পর্চা": "Land Records (Jomir Porcha)",
+  "মিউটেশন": "Land Mutation Services",
+  "অন্নপূর্ণা": "Annapurna Scheme",
+  "অন্নপূর্ণা প্রকল্প": "Annapurna Scheme",
+  "পৌরসভা": "Municipal Service Board",
+  "পৌরসভা চাকরি": "Municipal Service Board Job",
+  "পুলিশ নিয়োগ": "WBP Police Recruitment",
+  "পুলিশ": "Police Recruitment Services",
+  "শিক্ষা শ্রী": "Sikshashree Scholarship",
+  "শিক্ষাশ্রী": "Sikshashree Scholarship",
+  "তরুণের স্বপ্ন": "Taruner Swapno Scheme",
+  "সবুজ সাথী": "Sabooj Sathi (Bicycle Scheme)",
+  "সবুজসাথী": "Sabooj Sathi (Bicycle Scheme)",
+  "সবুজশ্রী": "Sabujshree Scheme",
+  "সবুজ শ্রী": "Sabujshree Scheme",
+  " can নিজের ও অভিভাবকের আধার কার্ড সহ সর্বশেষ মার্কশিট": "Nabanna CM Relief Fund Support",
+  "শিশু সাথী": "Shishu Sathi Scheme",
+  "বিনামূল্যে সামাজিক সুরক্ষা": "Samajik Suraksha Yojana (BM-SSY)",
+  "সামাজিক সুরক্ষা": "Samajik Suraksha Yojana (BM-SSY)",
+  "কর্মসাথী": "Karma Sathi Prakalpa",
+  "পথশ্রী": "Pathashree Prakalpa",
+  "সমব্যথী": "Samabyathi Scheme",
+  "লোকপ্রসার": "Lokaprasar Prakalpa",
+  "গীতাঞ্জলি হাউজিং": "Gitanjali Housing Scheme",
+  "গীতাঞ্জলি": "Gitanjali Housing Scheme",
+  "জয় বাংলা": "Jai Bangla Pension Scheme",
+  "উত্সব": "Utsav Portal",
+  "উৎসব": "Utsav Portal"
+};
+
+export function getEnglishTitleUnified(title: string): string {
+  if (!title) return "";
+  const trimmed = title.trim();
+
+  // 1. Check exact key in dictionary
+  if (BENGALI_TO_ENGLISH_TITLES[trimmed]) {
+    return BENGALI_TO_ENGLISH_TITLES[trimmed];
+  }
+
+  // 2. Substring matching of keys
+  for (const [bengali, english] of Object.entries(BENGALI_TO_ENGLISH_TITLES)) {
+    if (trimmed.includes(bengali)) {
+      return english;
+    }
+  }
+
+  // 3. Fallback, return as is (if already English)
+  return trimmed;
+}
 
 const renderOfficialLogo = (id: string) => {
   switch (id) {
@@ -619,14 +740,14 @@ const getServiceSubLinks = (id: string, officialUrl: string, customSubLinks?: { 
     case "srv4": // Caste Certificate
       return [
         {
-          label: "কাস্ট সার্টিফিকেট স্ট্যাটাস জানুন (Track Caste App)",
-          url: "http://casterepresentationwb.gov.in/track_application",
-          desc: "SC / ST / OBC আবেদনের রিসিভ নম্বর দিয়ে যাচাই করুন"
+          label: "জাতি শংসাপত্র স্ট্যাটাস চেক (Track Caste Certificate)",
+          url: "https://castetest.wb.gov.in/track-application",
+          desc: "SC/ST/OBC সার্টিফিকেট আবেদনের স্ট্যাটাস অনলাইন চেক"
         },
         {
-          label: "কাস্ট সার্টিফিকেট ডিটেইলস ভেরিফিকেশন (Verify Caste Card)",
-          url: "http://casterepresentationwb.gov.in/view_certificate",
-          desc: "অনুমোদিত সার্টিফিকেটের সত্যতা ও রেজিস্টার নম্বর মিলিয়ে নিন"
+          label: "জাতি শংসাপত্র ডাউনলোড সরাসরি (Download Caste Certificate)",
+          url: "https://castetest.wb.gov.in/download-certificate",
+          desc: "অনুমোদিত ডিজিটাল কাস্ট সার্টিফিকেট অনলাইন ডাউনলোড করুন"
         }
       ];
     case "srv5": // Income Certificate
@@ -645,53 +766,14 @@ const getServiceSubLinks = (id: string, officialUrl: string, customSubLinks?: { 
     case "srv11": // Death Certificate
       return [
         {
-          label: "মৃত্যু শংসাপত্র স্ট্যাটাস খোঁজ (Track Death Application)",
+          label: "মৃত্যু শংসাপত্র স্ট্যাটাস চেক করুন (Track Death App)",
           url: "https://janma-mrityutathya.wb.gov.in/index.php/citizens/track-application",
-          desc: "Ack/রেজিস্ট্রেশন নম্বর দিয়ে বর্তমান অবস্থা যাচাই করুন"
+          desc: "Ack বা রেজিস্ট্রেশন নম্বর দিয়ে আবেদনের অগ্রগতি পরীক্ষা করুন"
         },
         {
-          label: "ডিজিটাল মৃত্যু শংসাপত্র ডাউনলোড (Download e-Death Certificate)",
+          label: "ডিজিটাল মৃত্যু শংসাপত্র ডাউনলোড (Download Death Certificate)",
           url: "https://janma-mrityutathya.wb.gov.in/index.php/citizens/download-certificate",
-          desc: "অনলাইনে ডিজিটালি ভেরিফায়েড ডেথ সার্টিফিকেট ডাউনলোড"
-        }
-      ];
-    case "srv6": // PAN Aadhaar Link
-      return [
-        {
-          label: "লিঙ্ক করার সরাসরি লিঙ্ক (Link Aadhaar with PAN)",
-          url: "https://eportal.incometax.gov.in/iec/foservices/#/pre-login/link-aadhaar",
-          desc: "প্যান কার্ডের সাথে আধার লিঙ্কিং অনলাইন পোর্টাল"
-        },
-        {
-          label: "লিঙ্ক স্ট্যাটাস যাচাই (Check Link Status)",
-          url: "https://eportal.incometax.gov.in/iec/foservices/#/pre-login/link-aadhaar-status",
-          desc: "আপনার কার্ড দুটি যুক্ত সফল হয়েছে কি না তা দেখুন"
-        }
-      ];
-    case "srv9": // Passport
-      return [
-        {
-          label: "পাসপোর্ট ফাইল স্ট্যাটাস ট্র্যাকিং (Track Passport Status)",
-          url: "https://portal2.passportindia.gov.in/AppOnlineProject/statusTracker/trackStatusInpNew",
-          desc: "ফাইল নাম্বার ও জন্মতারিখ দিয়ে আবেদনের স্থিতি জানুন"
-        },
-        {
-          label: "অফিস স্লট উপলব্ধতা চেক (Check Appointment Availability)",
-          url: "https://portal2.passportindia.gov.in/AppOnlineProject/online/appointmentAvailState",
-          desc: "নিকটবর্তী পাসপোর্ট অফিসে কয়টি স্লট ফাঁকা আছে দেখে নিন"
-        }
-      ];
-    case "srv10": // Driving License
-      return [
-        {
-          label: "লাইসেন্স আবেদনের সরাসরি ট্র্যাকিং (Link Sarathi Application)",
-          url: "https://sarathi.parivahan.gov.in/sarathiservice/applViewStatus.do",
-          desc: "আবেদন নম্বর এবং জন্মতারিখ দিয়ে স্ট্যাটাস ট্র্যাকিং করুন"
-        },
-        {
-          label: "লার্নার টেস্ট অনলাইন মক প্র্যাক্টিস (LL Road Safety Test)",
-          url: "https://sarathi.parivahan.gov.in/sarathiservice/mockTestInp.do",
-          desc: "লার্নার স্ক্রিনিং টেস্টের জন্য বিনামূল্যে মক প্রশ্ন প্র্যাকটিস"
+          desc: "অনুমোদিত ও ভেরিফায়েড মৃত্যু তথ্য সার্টিফিকেট অনলাইন ডাউনলোড"
         }
       ];
     default:
@@ -699,103 +781,52 @@ const getServiceSubLinks = (id: string, officialUrl: string, customSubLinks?: { 
         {
           label: "সরাসরি অফিসিয়াল পোর্টাল লিংক (Official Direct Link)",
           url: officialUrl,
-          desc: "অফিসিয়াল ওয়েবসাইটে প্রবেশ করে আবেদন বা অনুসন্ধান করুন"
+          desc: "বিস্তারিত নির্দেশিকা এবং অনলাইন পরিষেবার জন্য সরাসরি লিঙ্কে প্রবেশ করুন।"
         }
       ];
   }
 };
 
-const expandQuery = (q: string): string[] => {
-  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+const expandQuery = (query: string): string[] => {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   const expansions: string[] = [];
-  
-  const dict: { [key: string]: string[] } = {
-    // Scheme categories and titles
-    "lakshmir": ["লক্ষ্মী", "লক্ষ্মীর", "ভাণ্ডার", "lakshmir", "bhandar"],
-    "bhandar": ["লক্ষ্মী", "লক্ষ্মীর", "ভাণ্ডার", "lakshmir", "bhandar"],
-    "krishak": ["কৃষক", "বন্ধু", "krishak", "bandhu", "farmer"],
-    "bandhu": ["কৃষক", "বন্ধু", "krishak", "bandhu"],
-    "farmer": ["কৃষক", "বন্ধু", "krishak", "bandhu", "চাষ", "চাষী", "মাঠ"],
-    "farmers": ["কৃষক", "বন্ধু", "krishak", "bandhu", "চাষ", "চাষী", "মাঠ"],
-    "agriculture": ["কৃষক", "চাষ", "চাষী"],
-    "women": ["মহিলা", "নারী", "মেয়ে", "কন্যা", "লক্ষ্মী", "রূপশ্রী", "কন্যাশ্রী", "women"],
-    "woman": ["মহিলা", "নারী", "মেয়ে", "কন্যা", "লক্ষ্মী", "রূপশ্রী", "কন্যাশ্রী"],
-    "girl": ["মেয়ে", "কন্যা", "রূপশ্রী", "কন্যাশ্রী"],
-    "girls": ["মেয়ে", "কন্যা", "রূপশ্রী", "কন্যাশ্রী"],
-    "widow": ["বিধবা"],
-    "student": ["ছাত্র", "শিক্ষার্থী", "ক্রেডিট", "কার্ড", "স্কলারশিপ", "student", "credit"],
-    "students": ["ছাত্র", "শিক্ষার্থী", "ক্রেডিট", "কার্ড", "স্কলারশিপ", "student", "credit"],
-    "scholarship": ["স্কলারশিপ", "শিক্ষাবৃত্তি", "টাকা", "ঐক্যশ্রী", "oasis", "svmcm", "বিবেকানন্দ", "নবান্ন", "scholarship"],
-    "scholarships": ["স্কলারশিপ", "শিক্ষাবৃত্তি", "টাকা", "ঐক্যশ্রী", "oasis", "svmcm", "বিবেকানন্দ", "নবান্ন", "scholarship"],
-    "school": ["স্কুল", "শিক্ষা", "শিক্ষক", "ssc", "school"],
-    "college": ["কলেজ", "উচ্চশিক্ষা", "student", "credit"],
-    "education": ["শিক্ষা", "ছাত্র", "শিক্ষার্থী"],
-    "credit": ["ক্রেডিট", "কার্ড", "ঋণ", "credit", "card"],
-    "card": ["কার্ড", "আধার", "ভোটার", "রেশন", "প্যান", "স্বাস্থ্য", "সাথী", "card"],
-    "cards": ["কার্ড", "আধার", "ভোটার", "রেশন", "প্যান", "স্বাস্থ্য", "সাথী", "card"],
-    "senior": ["প্রবীণ", "বার্ধক্য", "বয়স্ক", "ভাতা", "পেনশন", "senior", "pension"],
-    "old": ["প্রবীণ", "বার্ধক্য", "বয়স্ক", "ভাতা", "পেনশন", "old"],
-    "pension": ["ভাতা", "পেনশন", "পেনশান", "pension"],
-    "worker": ["শ্রমিক", "দিনমজুরি", "দিনমজুর", "bmssy", "সামাজিক", "সুরক্ষা", "worker"],
-    "workers": ["শ্রমিক", "দিনমজুরি", "দিনমজুর", "bmssy", "সামাজিক", "সুরক্ষা", "worker"],
-    "labour": ["শ্রমিক", "দিনমজুর", "bmssy", "labour"],
-    "labor": ["শ্রমিক", "দিনমজুর", "bmssy", "labor"],
-    "work": ["শ্রমিক", "কাজ", "কর্মচারী"],
-    "job": ["চাকরি", "নিয়োগ", "কর্মসংস্থান", "ফলাফল", "পুলিশ", "কনস্টেবল", "ক্লার্ক", "psc", "tet", "ssc", "job"],
-    "jobs": ["চাকরি", "নিয়োগ", "কর্মসংস্থান", "ফলাফল", "পুলিশ", "কনস্টেবল", "ক্লার্ক", "psc", "tet", "ssc", "job"],
-    "recruitment": ["নিয়োগ", "বিজ্ঞপ্তি", "চাকরি", "recruit"],
-    "recruit": ["নিয়োগ", "বিজ্ঞপ্তি", "চাকরি", "recruit"],
-    "vacancy": ["শূন্যপদ", "আসন", "পদ"],
-    "exam": ["পরীক্ষা", "ফল", "রেজাল্ট"],
-    "result": ["ফলাফল", "রেজাল্ট", "ফল"],
-
-    // Documents & Services
-    "aadhaar": ["আধার", "কার্ড", "aadhaar", "uidai"],
-    "aadhar": ["আধার", "কার্ড", "aadhaar", "uidai"],
-    "pan": ["প্যান", "pan", "ট্যাক্স"],
-    "voter": ["ভোটার", "ভোট", "voter", "epic"],
-    "ration": ["রেশন", "খাদ্য", "রেশনকার্ড", "ration"],
-    "passport": ["পাসপোর্ট", "passport", "বিদেশ"],
-    "driving": ["ড্রাইভিং", "লাইসেন্স", "গাড়ি", "driving", "license", "sarathi"],
-    "license": ["লাইসেন্স", "ড্রাইভিং", "license"],
-    "birth": ["জন্ম", "শংসাপত্র", "birth", "certificate"],
-    "death": ["মৃত্যু", "শংসাপত্র", "death", "certificate"],
-    "caste": ["জাতিগত", "শংসাপত্র", "কাস্ট", "caste", "certificate", "sc", "st", "obc"],
-    "castecert": ["কাস্ট", "সার্টিফিকেট"],
-    "income": ["আয়", "শংসাপত্র", "ইনকাম", "income", "certificate", "BDO"],
-    "obc": ["obc", "তপশিলি", "অনগ্রসর"],
-    "sc": ["sc", "তপশিলি"],
-    "st": ["st", "তপশিলি", "উপজাতি"],
-    "certificates": ["শংসাপত্র", "সার্টিফিকেট", "certificate"],
-    "certificate": ["শংসাপত্র", "সার্টিফিকেট", "certificate"],
-    
-    // Departments & organizations
-    "swasthya": ["স্বাস্থ্য", "সাথী", "চিকিৎসা", "হাসপাতাল", "বিমা", "swasthya", "sathi"],
-    "sathi": ["সাথী", "swasthya", "sathi"],
-    "health": ["স্বাস্থ্য", "সাথী", "নার্স", "ডাক্তার", "ডিজিটাল", "health"],
-    "police": ["পুলিশ", "কনস্টেবল", "থানা", "police", "constable", "wbp"],
-    "constable": ["কনস্টেবল", "constable"],
-    "clerk": ["ক্লার্ক", "ক্লার্কশিপ", "clerk", "psc"],
-    "clerkship": ["ক্লার্কশিপ", "clerkship", "psc"],
-    "psc": ["psc", "wbpsc", "পাবলিক", "সার্ভিস", "কমিশন"],
-    "wbpsc": ["wbpsc", "psc", "ক্লার্ক"],
-    "ssc": ["ssc", "school", "service", "স্কুল", "সার্ভিস"],
-    "tet": ["tet", "টেট", "প্রাথমিক", "শিক্ষক", "primary"],
-    "municipal": ["মিউনিসিপ্যাল", "পৌরসভা", "municipal"],
-    "corporation": ["কর্পোরেশন", "পৌরসভা", "corporation"],
-    "primary": ["প্রাথমিক", "টেট", "primary"],
-    "teacher": ["শিক্ষকত", "শিক্ষক", "শিক্ষিকা", "teacher"],
-    "nursing": ["নার্স", "নার্সিং", "nurse", "health"],
-    "nurse": ["নার্স", "নার্সিং", "nurse", "health"],
-
-    // Scholarships specific
-    "oasis": ["oasis", "ওএসিস", "কাস্ট"],
-    "aikyashree": ["ঐক্যশ্রী", "aikyashree", "সংখ্যালঘু"],
-    "minority": ["ঐক্যশ্রী", "সংখ্যালঘু", "minorities"],
-    "minorities": ["ঐক্যশ্রী", "সংখ্যালঘু", "minorities"],
-    "vivekananda": ["বিবেকানন্দ", "স্বামী", "svmcm", "vivekananda"],
-    "svmcm": ["svmcm", "বিবেকানন্দ", "স্বামী"],
-    "nabanna": ["নবান্ন", "ত্রাণ", "তহবিল", "nabanna"]
+  const dict: Record<string, string[]> = {
+    "নিয়োগ": ["নিয়োগ", "নিয়োগ", "কর্মসংস্থান", "ফলাফল", "পুলিশ", "কনস্টেবল", "ক্লার্ক", "psc", "tet", "ssc", "job"],
+    "nigo": ["নিয়োগ", "নিয়োগ", "কর্মসংস্থান", "job"],
+    "jobs": ["চাকরি", "নিয়োগ", "নিয়োগ", "কর্মসংস্থান", "ফলাফল", "পুলিশ", "কনস্টেবল", "ক্লার্ক", "psc", "tet", "ssc", "job"],
+    "recruitment": ["নিয়োগ", "নিয়োগ", "বিজ্ঞপ্তি", "চাকরি", "recruit"],
+    "recruit": ["নিয়োগ", "নিয়োগ", "বিজ্ঞপ্তি", "চাকরি", "recruit"],
+    "vacancy": ["শূন্যপদ", "আসন", "vacancy"],
+    "aadhar": ["aadhar", "adhar", "আধার", "uidad"],
+    "adhar": ["aadhar", "adhar", "আধার", "uidad"],
+    "আধার": ["aadhar", "adhar", "আধার", "uidad"],
+    "pan": ["pan", "pancard", "প্যান"],
+    "প্যান": ["pan", "pancard", "প্যান"],
+    "voter": ["voter", "epic", "ভোটার", "ভোট"],
+    "ভোটার": ["voter", "epic", "ভোটার", "ভোট"],
+    "ration": ["ration", "রেশন", "খাদ্য", "khadya"],
+    "রেশন": ["ration", "রেশন", "খাদ্য", "khadya"],
+    "passport": ["passport", "পাসপোর্ট"],
+    "পাসপোর্ট": ["passport", "পাসপোর্ট"],
+    "license": ["license", "licence", "লাইসেন্স", "vehicle"],
+    "licence": ["license", "licence", "লাইসেন্স", "vehicle"],
+    "লাইসেন্স": ["license", "licence", "লাইসেন্স", "vehicle"],
+    "birth": ["birth", "জন্ম", "janma"],
+    "জন্ম": ["birth", "জন্ম", "janma"],
+    "death": ["death", "মৃত্যু", "mrityu"],
+    "মৃত্যু": ["death", "মৃত্যু", "mrityu"],
+    "caste": ["caste", "জাতি", "sc", "st", "obc"],
+    "জাতি": ["caste", "জাতি", "sc", "st", "obc"],
+    "income": ["income", "আয়", "ay", "bdo"],
+    "আয়": ["income", "আয়", "ay", "bdo"],
+    "land": ["land", "জমি", "jomi", "পরচা", "khajna", "খাজনা", "mutation", "মিউটেশন", "banglarbhumi", "বাংলারভূমি"],
+    "জমি": ["land", "জমি", "jomi", "পরচা", "khajna", "খাজনা", "mutation", "মিউটেশন", "banglarbhumi", "বাংলারভূমি"],
+    "deed": ["deed", "দলিল", "registration"],
+    "দলিল": ["deed", "দলিল", "registration"],
+    "scholarship": ["scholarship", "স্কলারশিপ", "svmcm", "oasis", "aikyashree", "nsp"],
+    "স্কলারশিপ": ["scholarship", "স্কলারশিপ", "svmcm", "oasis", "aikyashree", "nsp"],
+    "health": ["health", "স্বাস্থ্য", "swasthya", "abha", "সাথী"],
+    "স্বাস্থ্য": ["health", "স্বাস্থ্য", "swasthya", "abha", "সাথী"]
   };
 
   words.forEach(word => {
@@ -803,22 +834,15 @@ const expandQuery = (q: string): string[] => {
     if (dict[word]) {
       expansions.push(...dict[word]);
     }
-    for (const key in dict) {
-      if (word.startsWith(key) || key.startsWith(word)) {
-        if (word.length >= 3 && key.length >= 3) {
-          expansions.push(...dict[key]);
-        }
-      }
-    }
   });
 
   return Array.from(new Set(expansions));
 };
 
 const DEFAULT_CATEGORIES: CategoryItem[] = [
-  { id: "welfare", label: "জনকল্যাণ প্রকল্প", desc: "সরকারি প্রকল্প ও সমাজসেবামূলক সহায়তা প্রোগ্রামসমূহ", iconName: "Sparkles" },
-  { id: "jobs", label: "সরকারি ও বেসরকারি চাকরি", desc: "রাজ্য ও কেন্দ্রের সাম্প্রতিকতম নিয়োগ বিজ্ঞপ্তি ও শূন্যপদ", iconName: "Briefcase" },
-  { id: "scholarships", label: "স্কলারশিপ ও অনুদান", desc: "মেধাবী শিক্ষার্থীদের জন্য শিক্ষাবৃত্তি ও আর্থিক অনুদান স্কিম", iconName: "GraduationCap" },
+  { id: "welfare", label: "সরকারি প্রকল্প", desc: "লক্ষ্মীর ভাণ্ডার, রূপশ্রী ও রাজ্য সরকারের নানাবিধ জনকল্যাণ মূলক প্রকল্প", iconName: "Award" },
+  { id: "jobs", label: "সরকারি চাকরি", desc: "রাজ্য ও কেন্দ্র সরকারের নতুন নিয়োগ, সিলেবাস ও পরীক্ষার খবরাখবর", iconName: "Briefcase" },
+  { id: "scholarships", label: "স্কলারশিপ", desc: "ঐক্যশ্রী, ওএসিস, বিবেকানন্দ স্কলারশিপ ও বিভিন্ন আর্থিক অনুদান স্কিম", iconName: "GraduationCap" },
   { id: "identity", label: "আধার ও পরিচয়পত্র", desc: "আধার, ভোটার, প্যান কার্ড ও অনুষঙ্গিক পরিচয় প্রমাণ প্রক্রিয়াকরণ", iconName: "IdCard" },
   { id: "utility", label: "সার্টিফিকেট ও লাইসেন্স", desc: "জাতভিত্তিক শংসাপত্র, জন্ম-মৃত্যু নিবন্ধন ও ডিজিটাল লাইসেন্স আবেদন", iconName: "FileText" },
   { id: "health", label: "হেলথ ও বিমা", desc: "স্বাস্থ্য সাথী ও ABHA বিমা কার্ড সংক্রান্ত গাইডসমূহ", iconName: "HeartPulse" },
@@ -841,7 +865,6 @@ const mergeCategoriesWithDefaults = (dbList: CategoryItem[]): CategoryItem[] => 
   });
   return merged;
 };
-
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   useEffect(() => {
@@ -851,6 +874,40 @@ export default function App() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // PWA Add-to-Home-Screen prompt states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+      console.log('beforeinstallprompt event captured!');
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    // Check if launching directly inside standard standalone web app mode
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone;
+    if (isStandalone) {
+      setShowInstallBanner(false);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User installation choice outcome: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  };
 
   // Global States (shared state for instant reactions)
   const [schemes, setSchemes] = useState<Scheme[]>([]);
@@ -863,17 +920,134 @@ export default function App() {
   const [firebaseStatus, setFirebaseStatus] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [docCategory, setDocCategory] = useState<string>("all");
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"services" | "all-links" | "tools">("services");
   const [settings, setSettings] = useState<{ geminiApiKey: string; heroBannerUrl?: string }>({ geminiApiKey: "", heroBannerUrl: "" });
+
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
+  const [adminPasswordError, setAdminPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showHelpCenterModal, setShowHelpCenterModal] = useState(false);
+
+  const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedService, setSelectedService] = useState<any | null>(null);
+
+  const [savedSchemeIds, setSavedSchemeIds] = useState<string[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+
+  const [activeSchemeTab, setActiveSchemeTab] = useState<"info" | "docs" | "apply">("info");
+  const [activeJobTab, setActiveJobTab] = useState<"info" | "requirements" | "apply">("info");
+
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [subType, setSubType] = useState<string>("general");
+  const [subSuccess, setSubTypeSuccess] = useState(false);
+
+  const [activeLegalModal, setActiveLegalModal] = useState<string | null>(null);
+  const [broadcastNotices, setBroadcastNotices] = useState<string[]>([]);
+
+  const [suggestionName, setSuggestionName] = useState("");
+  const [suggestionMobile, setSuggestionMobile] = useState("");
+  const [suggestionType, setSuggestionType] = useState("difficulty");
+  const [suggestionText, setSuggestionText] = useState("");
+  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
+  const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
+
+  // Digital shop receipt slip developer helper states
+  const [slipCustomer, setSlipCustomer] = useState("");
+  const [slipPhone, setSlipPhone] = useState("");
+  const [slipService, setSlipService] = useState("আধার কার্ড সংশোধন / বায়োমেট্রিক");
+  const [slipAmount, setSlipAmount] = useState("50");
+  const [slipPaid, setSlipPaid] = useState(true);
+  const [generatedSlip, setGeneratedSlip] = useState<any>(null);
+
+  const toggleSaveScheme = (id: string) => {
+    setSavedSchemeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSaveJob = (id: string) => {
+    setSavedJobIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleSubscribeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mobileNumber) return;
+    try {
+      setSubTypeSuccess(true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAdminPasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPasswordInput === "100") {
+      setIsAdminOpen(true);
+      setShowAdminPasswordModal(false);
+      setAdminPasswordInput("");
+      setAdminPasswordError("");
+    } else {
+      setAdminPasswordError("ভুল সিকিউরিটি কোড! দয়া করে সঠিক কোডটি দিন।");
+    }
+  };
+
+  const submitSuggestionForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suggestionText.trim()) return;
+    setSuggestionSubmitting(true);
+    const id = "sug_" + Date.now();
+    const newSug: Suggestion = {
+      id,
+      name: suggestionName || "বেনামী নাগরিক",
+      mobile: suggestionMobile || "",
+      type: suggestionType,
+      text: suggestionText,
+      status: "pending",
+      created_at: new Date().toISOString()
+    };
+    try {
+      if (!isPlaceholderFirebase) {
+        if (rtdb) {
+          await rtdbSet(rtdbRef(rtdb, `suggestions/${id}`), newSug);
+        } else if (db) {
+          await setDoc(doc(db, "suggestions", id), newSug);
+        }
+      }
+      await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newSug)
+      }).catch((e) => console.warn("API fallback ignored:", e));
+
+      setSuggestions((prev) => [newSug, ...prev]);
+      setSuggestionSubmitted(true);
+      setSuggestionText("");
+    } catch (err) {
+      console.error("Error submitting suggestion:", err);
+    } finally {
+      setSuggestionSubmitting(false);
+    }
+  };
 
   const allDashboardItems = useMemo(() => {
     const list: any[] = [];
+
+    // Helper to translate to English if needed
+    const getTargetTitle = (t: string, tEn?: string) => {
+      if (tEn && tEn.trim()) {
+        return getEnglishTitleUnified(tEn);
+      }
+      return getEnglishTitleUnified(t);
+    };
 
     // 1. Schemes -> welfare category
     if (Array.isArray(schemes)) {
       schemes.forEach((item) => {
         list.push({
           id: item.id,
-          title: item.title,
+          title: getTargetTitle(item.title, item.titleEn),
           subtitle: item.titleEn || item.categoryName || "সরকারি প্রকল্প",
           cat: "welfare",
           category: item.category || "welfare",
@@ -899,7 +1073,7 @@ export default function App() {
       jobs.forEach((item) => {
         list.push({
           id: item.id,
-          title: item.title,
+          title: getTargetTitle(item.title),
           subtitle: item.subtitle || item.categoryName || "নিয়োগ বিজ্ঞপ্তি",
           cat: "jobs",
           category: item.category || "jobs",
@@ -924,7 +1098,7 @@ export default function App() {
       scholarships.forEach((item) => {
         list.push({
           id: item.id,
-          title: item.title,
+          title: getTargetTitle(item.title),
           subtitle: item.amount || "শিক্ষাবৃত্তি অনুদান",
           cat: "scholarships",
           category: item.category || "scholarships",
@@ -969,7 +1143,7 @@ export default function App() {
         } else {
           list.push({
             id: item.id,
-            title: item.title,
+            title: getTargetTitle(item.title, item.titleEn),
             subtitle: item.subtitle || item.categoryName || "ডিজিটাল সেবা",
             category: mappedCat,
             categoryName: item.categoryName || "সেবা",
@@ -988,33 +1162,62 @@ export default function App() {
   }, [schemes, jobs, scholarships, services]);
 
   const displayedItems = useMemo(() => {
+    const activeCategoryFiltered = allDashboardItems.filter((item) => {
+      return docCategory === "all" || item.cat === docCategory || item.category === docCategory;
+    });
+
     if (!searchQuery.trim()) {
-      return allDashboardItems.filter((item) => {
-        return docCategory === "all" || item.cat === docCategory || item.category === docCategory;
-      });
+      return activeCategoryFiltered;
     }
 
+    const cleanQuery = searchQuery.trim().toLowerCase();
     const expandedTerms = expandQuery(searchQuery);
 
-    return allDashboardItems.filter((item) => {
-      const matchesSearch = expandedTerms.some((term) => {
-        const lowerTerm = term.toLowerCase();
-        return (
-          item.title.toLowerCase().includes(lowerTerm) ||
-          (item.subtitle && item.subtitle.toLowerCase().includes(lowerTerm)) ||
-          (item.description && item.description.toLowerCase().includes(lowerTerm)) ||
-          (item.badge && item.badge.toLowerCase().includes(lowerTerm)) ||
-          (item.categoryName && item.categoryName.toLowerCase().includes(lowerTerm))
-        );
-      });
+    const scoredList = activeCategoryFiltered
+      .map((item) => {
+        let score = 0;
+        const titleLower = item.title.toLowerCase();
+        const subtitleLower = item.subtitle ? item.subtitle.toLowerCase() : "";
+        const descLower = item.description ? item.description.toLowerCase() : "";
+        const badgeLower = item.badge ? item.badge.toLowerCase() : "";
+        const catNameLower = item.categoryName ? item.categoryName.toLowerCase() : "";
 
-      const matchesCategory =
-        docCategory === "all" ||
-        item.cat === docCategory ||
-        item.category === docCategory;
+        // Direct/Exact Match Scoring
+        if (titleLower === cleanQuery || subtitleLower === cleanQuery) {
+          score += 500;
+        } else if (titleLower.includes(cleanQuery)) {
+          score += 300;
+          if (titleLower.startsWith(cleanQuery)) score += 100;
+        } else if (subtitleLower.includes(cleanQuery)) {
+          score += 200;
+          if (subtitleLower.startsWith(cleanQuery)) score += 50;
+        }
 
-      return matchesSearch && matchesCategory;
-    });
+        // Expanded Terms and partial keywords (English or Bengali)
+        expandedTerms.forEach((term) => {
+          const t = term.toLowerCase();
+          if (titleLower.includes(t)) {
+            score += 80;
+          }
+          if (subtitleLower.includes(t)) {
+            score += 60;
+          }
+          if (badgeLower.includes(t) || catNameLower.includes(t)) {
+            score += 40;
+          }
+          if (descLower.includes(t)) {
+            score += 20;
+          }
+        });
+
+        return { item, score };
+      })
+      .filter((entry) => entry.score > 0);
+
+    // Sort by descending score to place matching portals first
+    scoredList.sort((a, b) => b.score - a.score);
+
+    return scoredList.map((entry) => entry.item);
   }, [allDashboardItems, searchQuery, docCategory]);
 
   // Fetch and sync all databases in real-time
@@ -1035,7 +1238,9 @@ export default function App() {
               const list = Array.isArray(val)
                 ? val.filter(Boolean)
                 : Object.keys(val).map((k) => val[k]);
-              if (list.length > 0) setSchemes(list);
+              setSchemes(list);
+            } else {
+              setSchemes([]);
             }
           }, (err) => {
             console.warn("Client-side schemes RTDB listener skipped:", err);
@@ -1043,7 +1248,7 @@ export default function App() {
             unsubSchemes = onSnapshot(collection(db, "schemes"), (snap) => {
               const list: Scheme[] = [];
               snap.forEach((doc) => list.push(doc.data() as Scheme));
-              if (list.length > 0) setSchemes(list);
+              setSchemes(list);
             }, (fsErr) => {
               console.warn("Fallback client schemes Firestore skipped:", fsErr);
             });
@@ -1055,7 +1260,9 @@ export default function App() {
               const list = Array.isArray(val)
                 ? val.filter(Boolean)
                 : Object.keys(val).map((k) => val[k]);
-              if (list.length > 0) setJobs(list);
+              setJobs(list);
+            } else {
+              setJobs([]);
             }
           }, (err) => {
             console.warn("Client-side jobs RTDB listener skipped:", err);
@@ -1063,7 +1270,7 @@ export default function App() {
             unsubJobs = onSnapshot(collection(db, "jobs"), (snap) => {
               const list: Job[] = [];
               snap.forEach((doc) => list.push(doc.data() as Job));
-              if (list.length > 0) setJobs(list);
+              setJobs(list);
             }, (fsErr) => {
               console.warn("Fallback client jobs Firestore skipped:", fsErr);
             });
@@ -1075,7 +1282,9 @@ export default function App() {
               const list = Array.isArray(val)
                 ? val.filter(Boolean)
                 : Object.keys(val).map((k) => val[k]);
-              if (list.length > 0) setScholarships(list);
+              setScholarships(list);
+            } else {
+              setScholarships([]);
             }
           }, (err) => {
             console.warn("Client-side scholarships RTDB listener skipped:", err);
@@ -1083,7 +1292,7 @@ export default function App() {
             unsubScholarships = onSnapshot(collection(db, "scholarships"), (snap) => {
               const list: Scholarship[] = [];
               snap.forEach((doc) => list.push(doc.data() as Scholarship));
-              if (list.length > 0) setScholarships(list);
+              setScholarships(list);
             }, (fsErr) => {
               console.warn("Fallback client scholarships Firestore skipped:", fsErr);
             });
@@ -1095,7 +1304,9 @@ export default function App() {
               const list = Array.isArray(val)
                 ? val.filter(Boolean)
                 : Object.keys(val).map((k) => val[k]);
-              if (list.length > 0) setServices(list);
+              setServices(list);
+            } else {
+              setServices([]);
             }
           }, (err) => {
             console.warn("Client-side services RTDB listener skipped:", err);
@@ -1103,7 +1314,7 @@ export default function App() {
             unsubServices = onSnapshot(collection(db, "services"), (snap) => {
               const list: ServiceItem[] = [];
               snap.forEach((doc) => list.push(doc.data() as ServiceItem));
-              if (list.length > 0) setServices(list);
+              setServices(list);
             }, (fsErr) => {
               console.warn("Fallback client services Firestore skipped:", fsErr);
             });
@@ -1115,7 +1326,9 @@ export default function App() {
               const list = Array.isArray(val)
                 ? val.filter(Boolean)
                 : Object.keys(val).map((k) => val[k]);
-              if (list.length > 0) setCategories(mergeCategoriesWithDefaults(list));
+              setCategories(list);
+            } else {
+              setCategories([]);
             }
           }, (err) => {
             console.warn("Client-side categories RTDB listener skipped:", err);
@@ -1123,7 +1336,7 @@ export default function App() {
             unsubCategories = onSnapshot(collection(db, "categories"), (snap) => {
               const list: CategoryItem[] = [];
               snap.forEach((doc) => list.push(doc.data() as CategoryItem));
-              if (list.length > 0) setCategories(mergeCategoriesWithDefaults(list));
+              setCategories(list);
             }, (fsErr) => {
               console.warn("Fallback client categories Firestore skipped:", fsErr);
             });
@@ -1134,9 +1347,7 @@ export default function App() {
             snapshot.forEach((doc) => {
               list.push(doc.data() as Scheme);
             });
-            if (list.length > 0) {
-              setSchemes(list);
-            }
+            setSchemes(list);
           }, (err) => {
             console.warn("Client-side schemes onSnapshot listener skipped:", err);
           });
@@ -1146,9 +1357,7 @@ export default function App() {
             snapshot.forEach((doc) => {
               list.push(doc.data() as Job);
             });
-            if (list.length > 0) {
-              setJobs(list);
-            }
+            setJobs(list);
           }, (err) => {
             console.warn("Client-side jobs onSnapshot listener skipped:", err);
           });
@@ -1158,9 +1367,7 @@ export default function App() {
             snapshot.forEach((doc) => {
               list.push(doc.data() as Scholarship);
             });
-            if (list.length > 0) {
-              setScholarships(list);
-            }
+            setScholarships(list);
           }, (err) => {
             console.warn("Client-side scholarships onSnapshot listener skipped:", err);
           });
@@ -1170,9 +1377,7 @@ export default function App() {
             snapshot.forEach((doc) => {
               list.push(doc.data() as ServiceItem);
             });
-            if (list.length > 0) {
-              setServices(list);
-            }
+            setServices(list);
           }, (err) => {
             console.warn("Client-side services onSnapshot listener skipped:", err);
           });
@@ -1182,9 +1387,7 @@ export default function App() {
             snapshot.forEach((doc) => {
               list.push(doc.data() as CategoryItem);
             });
-            if (list.length > 0) {
-              setCategories(mergeCategoriesWithDefaults(list));
-            }
+            setCategories(list);
           }, (err) => {
             console.warn("Client-side categories onSnapshot listener skipped:", err);
           });
@@ -1194,9 +1397,7 @@ export default function App() {
             snapshot.forEach((doc) => {
               list.push(doc.data() as Suggestion);
             });
-            if (list.length > 0) {
-              setSuggestions(list);
-            }
+            setSuggestions(list);
           }, (err) => {
             console.warn("Client-side suggestions onSnapshot listener skipped:", err);
           });
@@ -1219,28 +1420,28 @@ export default function App() {
 
         // Fetch fallback REST data if onSnapshot has not initialized data yet
         const schemesR = await fetch("/api/schemes").then(r => r.json()).catch(() => []);
-        if (Array.isArray(schemesR) && schemesR.length > 0) {
+        if (Array.isArray(schemesR)) {
           setSchemes((prev) => prev.length === 0 ? schemesR : prev);
         }
 
         const jobsR = await fetch("/api/jobs").then(r => r.json()).catch(() => []);
-        if (Array.isArray(jobsR) && jobsR.length > 0) {
+        if (Array.isArray(jobsR)) {
           setJobs((prev) => prev.length === 0 ? jobsR : prev);
         }
 
         const scholarshipsR = await fetch("/api/scholarships").then(r => r.json()).catch(() => []);
-        if (Array.isArray(scholarshipsR) && scholarshipsR.length > 0) {
+        if (Array.isArray(scholarshipsR)) {
           setScholarships((prev) => prev.length === 0 ? scholarshipsR : prev);
         }
 
         const servicesR = await fetch("/api/services").then(r => r.json()).catch(() => []);
-        if (Array.isArray(servicesR) && servicesR.length > 0) {
+        if (Array.isArray(servicesR)) {
           setServices((prev) => prev.length === 0 ? servicesR : prev);
         }
 
         const categoriesR = await fetch("/api/categories").then(r => r.json()).catch(() => []);
-        if (Array.isArray(categoriesR) && categoriesR.length > 0) {
-          setCategories(mergeCategoriesWithDefaults(categoriesR));
+        if (Array.isArray(categoriesR)) {
+          setCategories((prev) => prev.length === 0 || prev === DEFAULT_CATEGORIES ? categoriesR : prev);
         }
 
         const suggestionsR = await fetch("/api/suggestions").then(r => r.json()).catch(() => []);
@@ -1515,14 +1716,15 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(category)
-      }).catch((e) => console.warn("API fallback ignored (expected on Vercel):", e));
-      
+      }).catch((e) => console.warn("API categories save fallback ignored:", e));
+
       setCategories((prev) => {
         if (prev.some((c) => c.id === category.id)) {
           return prev.map((c) => c.id === category.id ? category : c);
         }
         return [...prev, category];
       });
+      triggerPushBroadcast(`নতুন ক্যাটাগরি যুক্ত বা আপডেট করা হয়েছে: ${category.label}`);
     } catch (err) {
       console.error("Error saving category:", err);
     }
@@ -1537,20 +1739,21 @@ export default function App() {
           await deleteDoc(doc(db, "categories", id));
         }
       }
-      await fetch(`/api/categories/${id}`, { method: "DELETE" }).catch((e) => console.warn("API fallback ignored (expected on Vercel):", e));
+      await fetch(`/api/categories/${id}`, { method: "DELETE" }).catch((e) => console.warn("API categories delete fallback ignored:", e));
       setCategories((prev) => prev.filter((c) => c.id !== id));
+      triggerPushBroadcast("ক্যাটাগরি সফলভাবে মুছে ফেলা হয়েছে।");
     } catch (err) {
       console.error("Error deleting category:", err);
     }
   };
 
-   const handleSaveSettings = async (newSettings: { geminiApiKey: string; heroBannerUrl?: string }): Promise<boolean> => {
+  const handleSaveSettings = async (newSettings: { geminiApiKey: string; heroBannerUrl?: string }): Promise<boolean> => {
     try {
       if (!isPlaceholderFirebase) {
         if (rtdb) {
           await rtdbSet(rtdbRef(rtdb, "settings"), newSettings);
         } else if (db) {
-          await setDoc(doc(db, "settings", "config"), newSettings);
+          await setDoc(doc(db, "settings", "global"), newSettings);
         }
       }
       await fetch("/api/settings", {
@@ -1560,175 +1763,12 @@ export default function App() {
       }).catch((e) => console.warn("API settings save fallback ignored:", e));
 
       setSettings(newSettings);
-      triggerPushBroadcast("সিস্টেম সেটিংস সফলভাবে সেভ করা হয়েছে!");
+      triggerPushBroadcast("সিস্টেম সেটিংস সফলভাবে সেভ করা হয়েছে।");
       return true;
     } catch (err) {
       console.error("Error saving settings:", err);
       return false;
     }
-  };
-
-  const handleSaveSuggestion = async (suggestion: Suggestion) => {
-    try {
-      if (!isPlaceholderFirebase) {
-        if (rtdb) {
-          await rtdbSet(rtdbRef(rtdb, `suggestions/${suggestion.id}`), suggestion);
-        } else if (db) {
-          await setDoc(doc(db, "suggestions", suggestion.id), suggestion);
-        }
-      }
-      await fetch("/api/suggestions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(suggestion)
-      }).catch((e) => console.warn("API suggestions save fallback ignored:", e));
-
-      setSuggestions((prev) => {
-        if (prev.some((s) => s.id === suggestion.id)) {
-          return prev.map((s) => s.id === suggestion.id ? suggestion : s);
-        }
-        return [suggestion, ...prev];
-      });
-    } catch (err) {
-      console.error("Error saving suggestion:", err);
-    }
-  };
-
-  const handleDeleteSuggestion = async (id: string) => {
-    try {
-      setSuggestions((prev) => prev.filter((s) => s.id !== id));
-      await fetch(`/api/suggestions/${id}`, { method: "DELETE" }).catch((e) => console.warn("API suggestions delete fallback ignored:", e));
-
-      if (!isPlaceholderFirebase) {
-        if (rtdb) {
-          await rtdbSet(rtdbRef(rtdb, `suggestions/${id}`), null);
-        } else if (db) {
-          await deleteDoc(doc(db, "suggestions", id));
-        }
-      }
-    } catch (err) {
-      console.error("Error deleting suggestion:", err);
-    }
-  };
-
-  // Filter and Search States
-  const [activeSchemeTab, setActiveSchemeTab] = useState<"all" | "women" | "students" | "farmers" | "senior" | "workers">("all");
-  const [activeJobTab, setActiveJobTab] = useState<"all" | "wbpsc" | "police" | "railway" | "banking" | "defence" | "private" | "internship">("all");
-
-  // Dialog/Modal states
-  const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
-
-  // Widget Toggles
-  const [isAiOpen, setIsAiOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-
-  // Admin Official Login Password states
-  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState("");
-  const [adminPasswordError, setAdminPasswordError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleAdminPasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPasswordInput === "100") {
-      setIsAdminOpen(true);
-      setShowAdminPasswordModal(false);
-      setAdminPasswordInput("");
-      setAdminPasswordError("");
-      triggerPushBroadcast("অফিসিয়াল অ্যাডমিন লগইন সফল! আপনি এখন স্কলারশিপ, প্রকল্প ও চাকরি এডিট করতে পারবেন।");
-    } else {
-      setAdminPasswordError("ভুল পাসওয়ার্ড! অনুগ্রহ করে সঠিক পাসওয়ার্ড দিন।");
-    }
-  };
-
-  // Dynamic user bookmarked schemes & jobs (Saved lists)
-  const [savedSchemeIds, setSavedSchemeIds] = useState<string[]>([]);
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
-
-  // Simulation Alert/Push Notifications State
-  const [broadcastNotices, setBroadcastNotices] = useState<string[]>([
-    "স্বাগতম! সহজ সেবা পোর্টালের মাধ্যমে পশ্চিমবঙ্গ রাজ্য সরকারের সমস্ত সামাজিক প্রকল্প, নিয়োগ এবং বৃত্তি সংক্রান্ত নির্ভরযোগ্য তথ্য সহজেই বাংলায় পাবেন।"
-  ]);
-
-  // Suggestion states
-  const [suggestionName, setSuggestionName] = useState("");
-  const [suggestionMobile, setSuggestionMobile] = useState("");
-  const [suggestionType, setSuggestionType] = useState("difficulty");
-  const [suggestionText, setSuggestionText] = useState("");
-  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
-  const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
-
-  const submitSuggestionForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!suggestionText.trim()) return;
-
-    setSuggestionSubmitting(true);
-    try {
-      const newSuggestion: Suggestion = {
-        id: "sug_" + Date.now(),
-        name: suggestionName.trim() || undefined,
-        mobile: suggestionMobile.trim() || undefined,
-        type: suggestionType,
-        text: suggestionText.trim(),
-        created_at: new Date().toISOString(),
-        status: "pending",
-        adminNotes: ""
-      };
-
-      await handleSaveSuggestion(newSuggestion);
-      setSuggestionSubmitted(true);
-      
-      // Clear form
-      setSuggestionName("");
-      setSuggestionMobile("");
-      setSuggestionType("difficulty");
-      setSuggestionText("");
-      
-      triggerPushBroadcast("আপনার মতামত সাফল্যের সাথে পাঠানো হয়েছে! অ্যাডমিনরা এটি শীঘ্রই পর্যালোচনা করবেন।");
-    } catch (err) {
-      console.error("Error submitting suggestion:", err);
-    } finally {
-      setSuggestionSubmitting(false);
-    }
-  };
-
-  // Subscription Alerts (WhatsApp & Telegram signup)
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [subType, setSubType] = useState<"WhatsApp" | "Telegram" | null>(null);
-  const [mobileNumber, setMobileNumber] = useState("");
-  const [subSuccess, setSubTypeSuccess] = useState(false);
-
-  const handleSubscribeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mobileNumber.length === 10) {
-      setSubTypeSuccess(true);
-      triggerPushBroadcast(`নতুন সাবস্ক্রিপশন রেজিস্টার্ড: ${subType} এর মাধ্যমে ${mobileNumber.slice(0, 3)}******* নম্বরে সরকারি আপডেট পাঠানো হবে।`);
-    } else {
-      triggerPushBroadcast("অনুগ্রহ করে একটি সঠিক ১০ সংখ্যার মোবাইল নম্বর লিখুন।");
-    }
-  };
-
-  // Additional user interface states (satisfying design constraints)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState("হোম");
-  const [showMoreServicesModal, setShowMoreServicesModal] = useState(false);
-  const [activeLegalModal, setActiveLegalModal] = useState<"terms" | "disclaimer" | "privacy" | null>(null);
-
-  // Bookmark toggler helpers
-  const toggleSaveScheme = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setSavedSchemeIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSaveJob = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setSavedJobIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
   };
 
   const savedSchemesList = useMemo(() => {
@@ -1739,7 +1779,6 @@ export default function App() {
     return jobs.filter((j) => savedJobIds.includes(j.id));
   }, [jobs, savedJobIds]);
 
-  // Search logic covering titles, categories, subtitles, descriptions, etc.
   const filteredSchemes = useMemo(() => {
     if (!searchQuery.trim()) {
       return schemes.filter((scheme) => {
@@ -1756,7 +1795,6 @@ export default function App() {
           scheme.title.toLowerCase().includes(lowerTerm) ||
           (scheme.titleEn && scheme.titleEn.toLowerCase().includes(lowerTerm)) ||
           scheme.benefits.toLowerCase().includes(lowerTerm) ||
-          scheme.eligibility.toLowerCase().includes(lowerTerm) ||
           scheme.category.toLowerCase().includes(lowerTerm) ||
           (scheme.categoryName && scheme.categoryName.toLowerCase().includes(lowerTerm))
         );
@@ -1798,490 +1836,334 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#F8FAFC] text-[#0F172A] transition-all duration-300 text-sm">
+    <div className="relative min-h-screen flex flex-col bg-[#F8FAFC] md:bg-slate-50/70 text-[#0F172A] transition-all duration-300 text-sm">
       
-      {/* GLOBAL TOP NAVIGATION BAR */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 w-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] select-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            {/* Logo and Brand */}
-            <div 
-              onClick={() => {
-                setIsAdminOpen(false);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="flex items-center gap-2.5 cursor-pointer group active:scale-95 transition-transform"
-            >
-              <img 
-                src={userLogo} 
-                className="h-10 w-10 sm:h-11 sm:w-11 object-contain select-none shrink-0" 
-                alt="সহজ সেবা লোগো" 
-                referrerPolicy="no-referrer"
-              />
-              <div className="flex flex-col">
-                <span className="font-extrabold text-[#0F172A] text-base md:text-lg leading-tight tracking-tight font-sans">
-                  সহজ সেবা
-                </span>
-                <span className="text-[9px] md:text-[10px] text-slate-450 font-black bg-gradient-to-r from-[#15803D] to-[#16A34A] bg-clip-text text-transparent uppercase tracking-wider font-sans">
-                  নাগরিক তথ্য ও সেবা পোর্টাল
-                </span>
-              </div>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-6">
-              <button
+      {/* 2. MAIN WRAPPER CONTAINER - Desktop & Mobile Unified Hub Card */}
+      <div className="w-full flex-grow flex flex-col max-w-7xl mx-auto md:my-6 bg-white md:border md:border-slate-200/95 md:rounded-3xl md:shadow-[0_10px_35px_-8px_rgba(15,23,42,0.04)] overflow-hidden">
+        
+        {/* GLOBAL TOP NAVIGATION BAR */}
+        <nav className="bg-white border-b border-slate-200 sticky top-0 md:static z-40 w-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] md:shadow-none select-none font-sans">
+          <div className="w-full px-4 sm:px-6">
+            <div className="flex justify-between h-16 items-center gap-2 sm:gap-4">
+              {/* Logo and Brand */}
+              <div 
                 onClick={() => {
                   setIsAdminOpen(false);
-                  setTimeout(() => {
-                    const el = document.getElementById("hero");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }, 50);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className={`text-xs font-bold font-sans transition-all py-2 px-3.5 rounded-xl flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 ${
-                  !isAdminOpen ? "text-[#15803D] bg-emerald-50 font-semibold" : "text-slate-650 hover:text-[#15803D]"
-                }`}
+                className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group active:scale-95 transition-transform shrink-0"
               >
-                <span>হোম পৃষ্ঠা</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsAdminOpen(false);
-                  setTimeout(() => {
-                    const el = document.getElementById("suggestion-box");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }, 50);
-                }}
-                className="text-xs font-bold font-sans text-slate-650 hover:text-[#15803D] hover:bg-slate-50 transition-all py-2 px-3.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>যোগাযোগ ও মতামত</span>
-              </button>
-
-              <button
-                onClick={() => setShowAdminPasswordModal(true)}
-                className="text-xs font-bold font-sans text-slate-650 hover:text-orange-650 hover:bg-orange-50 transition-all py-2 px-4 rounded-xl flex items-center gap-1.5 border border-slate-200 bg-slate-50 cursor-pointer shadow-xs active:scale-95"
-              >
-                <Shield className="h-3.5 w-3.5 text-orange-500" />
-                <span>অফিসের লগইন</span>
-              </button>
-            </div>
-
-            {/* Mobile Navigation Trigger */}
-            <div className="flex md:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2.5 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-[none] cursor-pointer"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5.5 w-5.5" />
-                ) : (
-                  <svg className="h-5.5 w-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Dropdown Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-150 bg-white px-4 py-3 space-y-2 animate-fade-in shadow-xs">
-            <button
-              onClick={() => {
-                setIsAdminOpen(false);
-                setIsMobileMenuOpen(false);
-                setTimeout(() => {
-                  const el = document.getElementById("hero");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }, 50);
-              }}
-              className="w-full text-left text-xs font-bold font-sans text-slate-700 hover:text-[#15803D] hover:bg-slate-50 py-3 px-3.5 rounded-xl block cursor-pointer transition-all"
-            >
-              হোম পৃষ্ঠা
-            </button>
-            
-            <button
-              onClick={() => {
-                setIsAdminOpen(false);
-                setIsMobileMenuOpen(false);
-                setTimeout(() => {
-                  const el = document.getElementById("suggestion-box");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }, 50);
-              }}
-              className="w-full text-left text-xs font-bold font-sans text-slate-700 hover:text-[#15803D] hover:bg-slate-50 py-3 px-3.5 rounded-xl block cursor-pointer transition-all"
-            >
-              যোগাযোগ ও মতামত
-            </button>
-
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                setShowAdminPasswordModal(true);
-              }}
-              className="w-full text-left text-xs font-bold font-sans text-orange-700 bg-orange-50 hover:bg-orange-100/50 py-3 px-3.5 rounded-xl flex items-center gap-2 cursor-pointer transition-all"
-            >
-              <Shield className="h-4 w-4 text-orange-500" />
-              <span>অফিসের লগইন</span>
-            </button>
-          </div>
-        )}
-      </nav>
-      
-      {/* 4. Main Container / Content Conditional */}
-      <main className="flex-grow">
-        {isAdminOpen ? (
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
-            <AdminPanel
-              schemes={schemes}
-              onCreateScheme={handleCreateScheme}
-              onSaveScheme={handleSaveScheme}
-              onDeleteScheme={handleDeleteScheme}
-              jobs={jobs}
-              onCreateJob={handleCreateJob}
-              onSaveJob={handleSaveJob}
-              onDeleteJob={handleDeleteJob}
-              scholarships={scholarships}
-              onCreateScholarship={handleCreateScholarship}
-              onSaveScholarship={handleSaveScholarship}
-              onDeleteScholarship={handleDeleteScholarship}
-              services={services}
-              onCreateService={handleCreateService}
-              onSaveService={handleSaveService}
-              onDeleteService={handleDeleteService}
-              categories={categories}
-              onSaveCategory={handleSaveCategory}
-              onDeleteCategory={handleDeleteCategory}
-              updates={updates}
-              setUpdates={setUpdates}
-              onClose={() => setIsAdminOpen(false)}
-              triggerPushNotification={triggerPushBroadcast}
-              firebaseStatus={firebaseStatus}
-              settings={settings}
-              onSaveSettings={handleSaveSettings}
-              suggestions={suggestions}
-              onSaveSuggestion={handleSaveSuggestion}
-              onDeleteSuggestion={handleDeleteSuggestion}
-            />
-          </div>
-        ) : (
-          <>
-            {/* 1. SEAMLESS COMPACT SEARCH HERO (Premium Responsive Brand Hub with dual-green accents) */}
-            <div id="hero" className="w-full relative py-8 sm:py-10 md:py-12 px-4 md:px-8 border-b border-slate-200 select-none overflow-hidden bg-white animate-fade-in flex flex-col justify-center min-h-[190px] sm:min-h-[220px] md:min-h-[240px]">
-              
-              {/* Background Howrah Bridge Sunset Image spanning full width/height with higher saturation & contrast */}
-              <div className="absolute inset-0 select-none pointer-events-none z-0">
-                <img
-                  src={settings.heroBannerUrl || "https://images.unsplash.com/photo-1558431382-27e303142255?auto=format&fit=crop&w=1800&q=85"}
-                  alt="Howrah Bridge Sunset"
-                  className="w-full h-full object-cover object-center brightness-[0.92] contrast-120 saturate-135"
+                <img 
+                  src={userLogo} 
+                  className="h-8 w-8 sm:h-10 sm:w-10 object-contain bg-slate-50 border border-slate-100/80 rounded-xl p-0.5 sm:p-1 shrink-0" 
+                  alt="সহজ সেবা লোগো"
                   referrerPolicy="no-referrer"
                 />
-              </div>
-
-              {/* Overlays for smooth blend & premium legibility */}
-              <div className="absolute inset-0 bg-black/15 z-[1] select-none pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/94 sm:via-white/88 md:via-white/72 to-transparent z-[2] select-none pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent z-[3] select-none pointer-events-none" />
-
-              {/* Foreground Content */}
-              <div className="max-w-7xl mx-auto flex flex-col items-start relative z-10 w-full space-y-2 sm:space-y-3">
-                
-                {/* TYPOGRAPHY GROUP (Shifted slightly upward via tighter spacing) */}
-                <div className="space-y-0.5 align-left text-left">
-                  <h1 className="font-extrabold text-[#0F172A] text-lg sm:text-xl md:text-2.5xl tracking-tight leading-none mb-0.5 font-sans">
+                <div className="text-left leading-none font-sans select-none block">
+                  <h1 className="text-xs sm:text-sm md:text-base font-extrabold text-[#15803D] tracking-tight">
                     সহজ সেবা
                   </h1>
-                  <h2 className="text-xs sm:text-sm md:text-md font-extrabold bg-gradient-to-r from-[#15803D] to-[#16A34A] bg-clip-text text-transparent font-sans">
-                    সব সেবা, এক ক্লিকে
-                  </h2>
-                  <h3 className="text-[10px] sm:text-[11px] md:text-xs text-slate-500 font-medium font-sans max-w-lg md:max-w-xl leading-relaxed">
-                    পশ্চিমবঙ্গের প্রতিটি নাগরিকের জন্য সরকারি প্রকল্প, চাকরি, স্কলারশিপ এবং ডিজিটাল সেবার নির্ভরযোগ্য তথ্য ও লিঙ্ক একত্রে বাংলায়।
-                  </h3>
+                  <span className="text-[7.5px] sm:text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider block">নাগরিক সেবা পোর্টাল</span>
                 </div>
+              </div>
 
-                {/* DYNAMIC NEO-PILL SEARCH BAR */}
-                <div className="w-full max-w-2xl bg-white/80 backdrop-blur-md p-1 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
-                  <div className="flex-1 flex items-center gap-2 w-full pl-2">
-                    <Search className="h-4 w-4 text-slate-400 shrink-0" />
-                    <input
-                      type="text"
-                      className="bg-transparent border-none outline-hidden h-8 sm:h-10 w-full text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 font-sans"
-                      placeholder="আধার কার্ড, লক্ষ্মীর ভান্ডার বা 'Aadhaar', 'Job', 'Scholarship'..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery("")}
-                        className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-650 cursor-pointer"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
+              {/* Middle Search Bar with Search/খুঁজুন Button & Elegant Glow Styling */}
+              <div className="flex-1 max-w-sm md:max-w-md mx-2 sm:mx-4 relative z-20">
+                <div className="relative flex items-center bg-[#F8FAFC] hover:bg-slate-100/80 border border-slate-250 border-slate-300/80 focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-[#15803D] focus-within:bg-white rounded-xl sm:rounded-2xl overflow-hidden transition-all shadow-[0_2px_8px_-1px_rgba(15,23,42,0.03)]">
+                  <div className="pl-3 sm:pl-4 flex items-center pointer-events-none text-slate-400">
+                    <Search className="h-4 w-4 shrink-0 transition-colors" />
                   </div>
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById("services-anchor");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (e.target.value.trim() && activeSidebarTab !== "all-links") {
+                        setActiveSidebarTab("all-links");
+                        setIsAdminOpen(false);
+                      }
                     }}
-                    className="w-full sm:w-auto px-4 h-8 sm:h-10 text-xs font-black text-white bg-gradient-to-r from-[#15803D] to-[#16A34A] hover:to-[#22C55E] rounded-lg sm:rounded-xl transition-all duration-300 shadow-sm flex items-center justify-center gap-1 cursor-pointer select-none"
+                    placeholder="Search government services & portals..."
+                    className="w-full pl-2 pr-2 py-1.5 sm:py-2.5 text-xs sm:text-sm font-bold bg-transparent border-0 outline-hidden focus:ring-0 focus:outline-hidden text-slate-800 placeholder-slate-400"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="p-1 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer mr-1 shrink-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                      setActiveSidebarTab("all-links");
+                      setIsAdminOpen(false);
+                      setTimeout(() => {
+                        const element = document.getElementById("services-anchor");
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }, 50);
+                    }}
+                    className="bg-[#15803D] hover:bg-green-700 text-white px-3 sm:px-4 py-1.5 sm:py-2.5 text-[11px] sm:text-xs font-black transition-all duration-150 shrink-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center gap-1 border-l border-emerald-600"
                   >
                     <span>খুঁজুন</span>
-                    <Search className="h-3 w-3" />
                   </button>
                 </div>
+              </div>
 
+              {/* Action area on the right */}
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                {/* Free Help Center Trigger */}
+                <button
+                  onClick={() => {
+                    setSuggestionSubmitted(false);
+                    setSuggestionText("");
+                    setShowHelpCenterModal(true);
+                  }}
+                  className="bg-amber-50 hover:bg-amber-100/80 text-amber-800 border border-amber-200/90 px-2 sm:px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black cursor-pointer transition-all duration-150 flex items-center gap-1 shadow-3xs"
+                >
+                  <HelpCircle className="h-3 sm:h-3.5 sm:w-3.5 text-amber-600 shrink-0" />
+                  <span className="hidden leading-none md:inline">ফ্রি হেল্প সেন্টার</span>
+                  <span className="md:hidden">হেল্প</span>
+                </button>
+
+                {/* Admin/Login Trigger */}
+                <button
+                  onClick={() => setShowAdminPasswordModal(true)}
+                  className="text-[#15803D] hover:bg-emerald-50 bg-emerald-50/45 border border-[#86EFAC]/45 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black cursor-pointer transition-all duration-150 flex items-center gap-1 shadow-3xs"
+                >
+                  <Shield className="h-3 sm:h-3.5 sm:w-3.5 text-emerald-600 shrink-0" />
+                  <span className="hidden sm:inline">লগইন</span>
+                  <span className="sm:hidden">লগইন</span>
+                </button>
               </div>
             </div>
+          </div>
+        </nav>
 
-            {/* SEPARATED CLEAN WHITE BACKGROUND CONTAINER FOR CATEGORY FILTER TRACK SLIDER with a subtle dividing line */}
-            <div className="w-full bg-white border-b border-slate-200/70 select-none py-4 px-4 md:px-8 relative z-10">
-              <div className="max-w-7xl mx-auto space-y-2">
-                <div className="text-[10px] text-slate-400 font-black tracking-wider uppercase font-sans select-none text-left">ক্যাটাগরি ফিল্টার করুন:</div>
-                <div className="flex flex-wrap items-center gap-1.5 md:gap-2 select-none w-full">
-                  {[
-                    { id: "all", label: "সব সেবা", iconName: "Grid" },
-                    ...categories.map((c) => ({ id: c.id, label: c.label, iconName: c.iconName }))
-                  ].map((cat) => {
-                    const IconComponent = getCategoryIcon(cat.iconName);
-                    const isCatActive = docCategory === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setDocCategory(cat.id)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-1.5 cursor-pointer border select-none ${
-                          isCatActive
-                            ? "bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] font-extrabold shadow-sm scale-[1.02]"
-                            : "text-slate-650 bg-slate-50 border-slate-200/60 hover:bg-slate-100/80 hover:text-[#15803D]"
-                        }`}
-                      >
-                        <IconComponent className={`h-3.5 w-3.5 ${isCatActive ? "text-[#15803D]" : "text-slate-400"}`} />
-                        <span>{cat.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+        {/* 4. Main Container / Content Conditional */}
+        <main className="flex-grow">
+          {isAdminOpen ? (
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
+              {/* Render Admin Panel with its full settings */}
+              <AdminPanel 
+                schemes={schemes}
+                onCreateScheme={handleCreateScheme}
+                onSaveScheme={handleSaveScheme}
+                onDeleteScheme={handleDeleteScheme}
+
+                jobs={jobs}
+                onCreateJob={handleCreateJob}
+                onSaveJob={handleSaveJob}
+                onDeleteJob={handleDeleteJob}
+
+                scholarships={scholarships}
+                onCreateScholarship={handleCreateScholarship}
+                onSaveScholarship={handleSaveScholarship}
+                onDeleteScholarship={handleDeleteScholarship}
+
+                services={services}
+                onCreateService={handleCreateService}
+                onSaveService={handleSaveService}
+                onDeleteService={handleDeleteService}
+
+                categories={categories}
+                onSaveCategory={handleSaveCategory}
+                onDeleteCategory={handleDeleteCategory}
+
+                updates={updates}
+                setUpdates={setUpdates}
+                onClose={() => setIsAdminOpen(false)}
+                triggerPushNotification={triggerPushBroadcast}
+                firebaseStatus={null}
+                settings={settings}
+                onSaveSettings={handleSaveSettings}
+                suggestions={suggestions}
+                onSaveSuggestion={async (item) => {
+                  try {
+                    if (!isPlaceholderFirebase) {
+                      if (rtdb) {
+                        await rtdbSet(rtdbRef(rtdb, `suggestions/${item.id}`), item);
+                      } else if (db) {
+                        await setDoc(doc(db, "suggestions", item.id), item);
+                      }
+                    }
+                    await fetch("/api/suggestions", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(item)
+                    }).catch((e) => console.warn("API fallback ignored:", e));
+                    setSuggestions(prev => prev.map(x => x.id === item.id ? item : x));
+                  } catch (e) {
+                    console.error("Error updating suggestion:", e);
+                  }
+                }}
+                onDeleteSuggestion={async (id) => {
+                  try {
+                    if (!isPlaceholderFirebase) {
+                      if (rtdb) {
+                        await rtdbSet(rtdbRef(rtdb, `suggestions/${id}`), null);
+                      } else if (db) {
+                        await deleteDoc(doc(db, "suggestions", id));
+                      }
+                    }
+                    await fetch(`/api/suggestions/${id}`, {
+                      method: "DELETE"
+                    }).catch((e) => console.warn("API fallback ignored:", e));
+                    setSuggestions(prev => prev.filter(x => x.id !== id));
+                  } catch (e) {
+                    console.error("Error deleting suggestion:", e);
+                  }
+                }}
+              />
             </div>
+          ) : (
 
-          {/* 2. GANABHABAN BRANDED HUB OF OFFICIAL PORTALS - FLUSH WITH HERO */}
-          <div id="services-anchor" />
-          <section id="digital-document-hub-section" className="w-full bg-gradient-to-b from-white via-slate-50 to-slate-50/20 pb-16 pt-5 px-4 md:px-8 animate-fade-in select-none">
-            <div className="max-w-7xl mx-auto">
-              {/* Responsive Cards Grid - Desktop: 5 columns for extremely neat compact look, Mobile: 2 Columns */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4.5 font-sans">
-                {displayedItems.length === 0 ? (
-                  <div className="col-span-full py-16 px-4 text-center bg-white/65 backdrop-blur-xs border border-dashed border-orange-200 rounded-3xl animate-fade-in flex flex-col items-center justify-center space-y-2">
-                    <HelpCircle className="h-10 w-10 text-orange-300" />
-                    <p className="text-sm text-slate-700 font-extrabold font-sans">কোনো নাগরিক সেবা বা অফিশিয়াল লিংক পাওয়া যায়নি।</p>
-                    <p className="text-xs text-slate-500 max-w-md">অফিসিয়াল লগইন (Admin) সেকশনে গিয়ে নতুন সেবা, প্রকল্প বা নোটিফিকেশন যুক্ত করুন, যা রিয়েল-টাইমে এখানে সরাসরি যুক্ত হবে।</p>
-                  </div>
-                ) : (
-                  displayedItems.map((item) => {
-                    const { rating, badgeText } = getServiceMetadata(item.id, item.cat || item.category || "");
-                    const style = getCategoryColorAccent(item.cat || item.category || "");
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          setSelectedService({
-                            id: item.id,
-                            title: item.title,
-                            description: item.description,
-                            steps: item.steps,
-                            officialUrl: item.officialUrl,
-                            category: item.cat,
-                            categoryName: item.badge,
-                            logoUrl: item.logoUrl || ""
-                          });
-                        }}
-                        className={`p-3.5 sm:p-4.5 bg-white/80 backdrop-blur-md bg-gradient-to-br ${style.gradient} border border-slate-200/80 ${style.borderAccent} ${style.glow} min-h-[135px] sm:min-h-[145px] h-auto rounded-[20px] cursor-pointer hover:-translate-y-1 group transition-all duration-300 flex flex-col justify-between gap-3 relative overflow-hidden select-none`}
-                        id={`service-card-${item.id}`}
-                      >
-                        {/* Elegant custom dynamic color glow spot matching category */}
-                        <div className={`absolute -top-14 -right-14 w-28 h-28 rounded-full bg-gradient-to-br ${style.orbGradient} blur-2xl opacity-35 group-hover:opacity-65 transition-opacity duration-500`} />
-                        <div className="absolute -bottom-16 -left-16 w-14 h-14 rounded-full bg-slate-500/5 blur-xl group-hover:bg-slate-500/8 transition-colors duration-300" />
-
-                        {/* Top Accent Row: Icon box & Sleek arrow link wrapper */}
-                        <div className="flex items-center justify-between w-full relative z-10">
-                          {/* Large colorful icon/logo area with rounded-xl style - No solid white override so dynamic category color shows perfectly under transparent logos */}
-                          <div className={`w-9.5 h-9.5 sm:w-10.5 sm:h-10.5 rounded-[12px] sm:rounded-[14px] flex items-center justify-center shrink-0 border ${style.iconBorder} ${style.iconBg} relative shadow-3xs overflow-hidden transition-all duration-350 group-hover:scale-105`}>
-                            {/* Inner ambient shine overlay */}
-                            <div className="absolute inset-0 bg-white/5 opacity-50 rounded-[12px] sm:rounded-[14px]" />
-                            
-                            {item.logoUrl ? (
-                              <img 
-                                src={item.logoUrl} 
-                                className="w-full h-full rounded-[10px] sm:rounded-[12px] object-contain p-1 transition-transform duration-300 shrink-0 bg-transparent" 
-                                referrerPolicy="no-referrer" 
-                                alt="" 
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full group-hover:scale-105 transition-transform duration-350 shrink-0 flex items-center justify-center p-1 [&_svg]:w-full [&_svg]:h-full [&_svg]:shrink-0">
-                                {renderOfficialLogo(item.id)}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Minimal SaaS action bubble on top right */}
-                          <div className="shrink-0">
-                            <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl flex items-center justify-center border border-slate-200/40 shadow-3xs transition-all duration-300 ${style.arrowClass} group-hover:translate-x-0.5 group-hover:-translate-y-0.5`}>
-                              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform duration-300 group-hover:rotate-45" />
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Content Area: Modern high-contrast typography and auto-growing row alignment */}
-                        <div className="space-y-2.5 min-w-0 relative z-10 flex-1 flex flex-col justify-between">
-                          <h4 className="font-extrabold text-[12px] sm:text-[13px] text-slate-800 leading-snug tracking-tight transition-colors duration-250 group-hover:text-slate-900 group-hover:translate-x-0.5 max-w-[98%] line-clamp-2 select-text">
-                            {item.title}
-                          </h4>
-
-                          {/* Footer row: custom status capsule & rating metrics */}
-                          <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100/60 group-hover:border-slate-200/40 transition-colors mt-auto">
-                            {/* Soft pill dynamic tag */}
-                            <span className={`inline-flex items-center gap-1 text-[8px] sm:text-[9.5px] font-black px-2 py-0.5 rounded-lg border ${style.badgeBg} truncate max-w-[70%] sm:max-w-none shadow-[inset_0_1px_2px_rgba(255,255,255,0.4)]`}>
-                              <span className={`w-1 h-1 rounded-full ${style.badgeDot} shrink-0`} />
-                              <span className="truncate">{badgeText}</span>
-                            </span>
-
-                            {/* Crisp glassmorphic rating badge */}
-                            <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9.5px] font-black text-amber-600 bg-amber-55/10 hover:bg-amber-55/20 border border-amber-150/30 px-1.5 py-0.5 rounded-lg shrink-0 shadow-3xs">
-                              ★ {rating}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* SUGGESTION BOX SECTION */}
-          <section id="suggestion-box" className="w-full relative py-6 sm:py-8 px-4 md:px-8 bg-slate-50/70 border-t border-b border-slate-200 select-none">
-            <div className="max-w-7xl mx-auto w-full animate-fade-in animate-duration-300">
+          <div className="w-full mx-auto px-4 sm:px-6 lg:px-0 py-5 lg:py-0 sm:py-7">
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-0 items-start lg:items-stretch">
               
-              {/* Header with feedback icon and title, neat, small */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200/50 pb-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600 border border-emerald-100">
-                    <MessageSquare className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-800">নাগরিক মতামত ও পরামর্শ বক্স</h3>
-                    <p className="text-[10px] text-slate-500 font-medium">সহজ সেবাকে আরও উন্নত করতে আপনার মূল্যবান মতামত জানান</p>
-                  </div>
-                </div>
-              </div>
-
-              {suggestionSubmitted ? (
-                <div className="py-4 flex flex-col items-center justify-center text-center space-y-2 animate-fade-in">
-                  <div className="h-10 w-10 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center text-emerald-500">
-                    <CheckCircle2 className="h-5 w-5 animate-bounce" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-black text-slate-800">মতামত সফলভাবে জমা হয়েছে!</h4>
-                    <p className="text-[10px] text-slate-500 font-semibold">
-                      আপনার গুরুত্বপূর্ণ পরামর্শ বা সমস্যাটি রিয়েল-টাইমে সেভ করা হয়েছে। ধন্যবাদ।
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={submitSuggestionForm} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3.5 items-end">
-                  
-                  {/* Name field */}
-                  <div className="md:col-span-3 space-y-1">
-                    <label className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1">
-                      <span>আপনার নাম</span>
-                      <span className="text-[8px] text-slate-400 font-normal">(ঐচ্ছিক)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={suggestionName}
-                      onChange={(e) => setSuggestionName(e.target.value)}
-                      placeholder="যেমন: উজ্জ্বল দে"
-                      className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg focus:outline-hidden focus:ring-4 focus:ring-emerald-100/40 focus:border-[#15803D] bg-white hover:bg-slate-50/50 transition-all text-slate-800"
-                    />
+              {/* LEFT SIDEBAR (সহজ সেবা লোগো থেকে পুরো একটা পেছনে বক্স আকারের নামবে) */}
+              <aside className="w-full lg:w-64 shrink-0 bg-white border border-slate-200/80 lg:border-y-0 lg:border-l-0 lg:border-r lg:border-slate-150/80 shadow-[0_4px_24px_-4px_rgba(15,23,42,0.03)] lg:shadow-none rounded-2xl lg:rounded-none p-4 sm:p-5 lg:p-6 flex flex-col gap-5 select-none self-start lg:self-auto lg:bg-slate-50/50 lg:sticky lg:top-0">
+                
+                {/* 1. Menu List Header at the very top (Enlarged and highlighted) */}
+                <div className="space-y-3">
+                  <div className="text-sm sm:text-base font-extrabold text-slate-800 tracking-wider uppercase pb-2 border-b border-slate-200 flex items-center gap-2 px-0.5">
+                    <ClipboardList className="h-4.5 w-4.5 text-[#15803D]" />
+                    <span>মেনু তালিকা</span>
                   </div>
 
-                  {/* Mobile No field */}
-                  <div className="md:col-span-3 space-y-1">
-                    <label className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1 font-sans">
-                      <span>মোবাইল নম্বর</span>
-                      <span className="text-[8px] text-slate-400 font-normal">(ঐচ্ছিক)</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={suggestionMobile}
-                      onChange={(e) => setSuggestionMobile(e.target.value)}
-                      placeholder="যেমন: 9382040746"
-                      className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg focus:outline-hidden focus:ring-4 focus:ring-emerald-100/40 focus:border-[#15803D] bg-white hover:bg-slate-50/50 transition-all text-slate-800 font-sans"
-                    />
-                  </div>
-
-                  {/* Suggestion Type block */}
-                  <div className="md:col-span-2 space-y-1}>">
-                    <label className="text-[10px] font-extrabold text-slate-600">মন্তব্যের ধরন</label>
-                    <select
-                      value={suggestionType}
-                      onChange={(e) => setSuggestionType(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white text-slate-700 outline-hidden focus:ring-4 focus:ring-emerald-100/40 focus:border-[#15803D] transition-all"
+                  <div className="grid grid-cols-3 lg:grid-cols-1 gap-1.5 pt-1">
+                    {/* সেবা সমূহ - Active & beautiful */}
+                    <button
+                      onClick={() => {
+                        setActiveSidebarTab("services");
+                        setIsAdminOpen(false);
+                      }}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 sm:py-3 rounded-xl text-[11px] sm:text-xs text-left cursor-pointer transition-all duration-200 border ${
+                        activeSidebarTab === "services"
+                          ? "text-[#15803D] bg-emerald-50 border-[#86EFAC]/45 font-black shadow-3xs"
+                          : "text-slate-650 bg-slate-50 border-slate-200/60 hover:bg-slate-100/30 font-bold"
+                      }`}
                     >
-                      <option value="difficulty">সমস্যা</option>
-                      <option value="feature">নতুন ফিচার</option>
-                      <option value="other">অন্যান্য</option>
-                    </select>
+                      <Grid className={`h-3.5 w-3.5 shrink-0 ${activeSidebarTab === "services" ? "text-emerald-600" : "text-slate-400"}`} />
+                      <span className="truncate">সেবা সমূহ</span>
+                    </button>
+
+                    {/* সমস্ত লিংক - Inactive but beautiful */}
+                    <button
+                      onClick={() => {
+                        setActiveSidebarTab("all-links");
+                        setIsAdminOpen(false);
+                      }}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 sm:py-3 rounded-xl text-[11px] sm:text-xs text-left cursor-pointer transition-all duration-200 border ${
+                        activeSidebarTab === "all-links"
+                          ? "text-[#15803D] bg-emerald-50 border-[#86EFAC]/45 font-black shadow-3xs"
+                          : "text-slate-650 bg-slate-50 border-slate-200/60 hover:bg-slate-100/30 font-bold"
+                      }`}
+                    >
+                      <Globe className={`h-3.5 w-3.5 shrink-0 ${activeSidebarTab === "all-links" ? "text-emerald-600" : "text-slate-400"}`} />
+                      <span className="truncate">সমস্ত লিংক</span>
+                    </button>
+
+                    {/* টুলস - Inactive but beautiful */}
+                    <button
+                      onClick={() => {
+                        setActiveSidebarTab("tools");
+                        setIsAdminOpen(false);
+                      }}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 sm:py-3 rounded-xl text-[11px] sm:text-xs text-left cursor-pointer transition-all duration-200 border ${
+                        activeSidebarTab === "tools"
+                          ? "text-[#15803D] bg-emerald-50 border-[#86EFAC]/45 font-black shadow-3xs"
+                          : "text-slate-650 bg-slate-50 border-slate-200/60 hover:bg-slate-100/30 font-bold"
+                      }`}
+                    >
+                      <Laptop className={`h-3.5 w-3.5 shrink-0 ${activeSidebarTab === "tools" ? "text-emerald-600" : "text-slate-400"}`} />
+                      <span className="truncate">টুলস</span>
+                    </button>
                   </div>
+                </div>
 
-                  {/* Message field & submit button */}
-                  <div className="md:col-span-4 space-y-1">
-                    <label className="text-[10px] font-extrabold text-slate-600 flex items-center justify-between">
-                      <span>আপনার সাজেশান বা অভিযোগ</span>
-                      <span className="text-[8px] text-red-500 font-bold">*প্রয়োজনীয়</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={suggestionText}
-                        onChange={(e) => setSuggestionText(e.target.value)}
-                        required
-                        placeholder="আপনার পরামর্শ বা সমস্যাটি লিখুন..."
-                        className="flex-1 px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg focus:outline-hidden focus:ring-4 focus:ring-emerald-100/40 focus:border-[#15803D] bg-white hover:bg-slate-50 transition-all text-slate-800 placeholder-slate-400"
-                      />
-                      <button
-                        type="submit"
-                        disabled={suggestionSubmitting}
-                        className="bg-gradient-to-r from-[#15803D] to-[#16A34A] hover:to-[#22C55E] text-white font-black text-xs px-4 rounded-lg shadow-sm transition-all duration-150 cursor-pointer flex items-center justify-center gap-1 hover:shadow-md disabled:opacity-75 disabled:cursor-not-allowed shrink-0 whitespace-nowrap h-[32px]"
-                      >
-                        {suggestionSubmitting ? (
-                          <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        ) : (
-                          <>
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            <span>জমা দিন</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                {/* 3. Supports Helpline (হালকা গ্রীন কালার দিয়ে সাপোর্ট হেল্পলাইন করবে ভালো করে 9382040746, নিচে বিকাল ৪ঃ০০ টা থেকে রাত্রি ১০:০০) */}
+                <div className="bg-[#EFFDF4]/90 border border-[#86EFAC]/45 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-3xs select-none">
+                  <div className="w-8.5 h-8.5 bg-emerald-100 flex items-center justify-center rounded-xl text-[#15803D] mb-1.5 border border-[#86EFAC]/30 shrink-0">
+                    <Phone className="h-4.5 w-4.5 text-emerald-700 animate-pulse" />
                   </div>
+                  <div className="text-[10px] text-emerald-800 font-extrabold tracking-wider uppercase mb-0.5 font-sans">
+                    সাপোর্ট হেল্পলাইন
+                  </div>
+                  <a href="tel:9382040746" className="text-sm sm:text-base font-black text-[#15803D] font-sans tracking-tight hover:underline mb-1 flex items-center gap-1">
+                    9382040746
+                  </a>
+                  <div className="text-[9px] sm:text-[9.5px] text-emerald-800 font-extrabold bg-emerald-100/50 border border-emerald-200/30 px-2 py-0.5 rounded-md leading-relaxed whitespace-nowrap">
+                    বিকাল ৪ঃ০০ টা থেকে রাত্রি ১০:০০
+                  </div>
+                </div>
 
-                </form>
-              )}
+              </aside>
 
-            </div>
-          </section>
-        </>
-      )}
+              {/* RIGHT CONTENT COLUMN */}
+              <div className="flex-1 min-w-0 w-full space-y-5 lg:space-y-6 lg:p-6 lg:bg-white">
 
+                {activeSidebarTab === "services" && (
+                  <DashboardServices
+                    categories={categories}
+                    updates={updates}
+                    onSelectCategory={(catId) => {
+                      setDocCategory(catId);
+                      setActiveSidebarTab("all-links");
+                      setTimeout(() => {
+                        const el = document.getElementById("services-anchor");
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 80);
+                    }}
+                    onNavigateTab={(tab) => {
+                      setActiveSidebarTab(tab);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    getCategoryIcon={getCategoryIcon}
+                  />
+                )}
+
+                {activeSidebarTab === "all-links" && (
+                  <DashboardAllLinks
+                    categories={categories}
+                    docCategory={docCategory}
+                    setDocCategory={setDocCategory}
+                    displayedItems={displayedItems}
+                    getCategoryIcon={getCategoryIcon}
+                    getCategoryColorAccent={getCategoryColorAccent}
+                    renderOfficialLogo={renderOfficialLogo}
+                    getServiceMetadata={getServiceMetadata}
+                    onSelectService={setSelectedService}
+                  />
+                )}
+
+
+                {activeSidebarTab === "tools" && (
+                  <DashboardTools
+                    slipCustomer={slipCustomer}
+                    setSlipCustomer={setSlipCustomer}
+                    slipPhone={slipPhone}
+                    setSlipPhone={setSlipPhone}
+                    slipService={slipService}
+                    setSlipService={setSlipService}
+                    slipAmount={slipAmount}
+                    setSlipAmount={setSlipAmount}
+                    slipPaid={slipPaid}
+                    setSlipPaid={setSlipPaid}
+                    generatedSlip={generatedSlip}
+                    setGeneratedSlip={setGeneratedSlip}
+                  />
+                )}
+
+
+              </div> {/* Close RIGHT CONTENT COLUMN */}
+            </div> {/* Close flex row */}
+          </div>
+        )}
       </main>
+      </div> {/* Close Desktop Wrapper Card */}
 
       {/* 4. PREMIUM FOOTER TRUST BADGES CONTAINER */}
       <section className="bg-warm-cream/90 border-y border-orange-100 py-6 px-4">
@@ -2923,6 +2805,158 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL: FREE HELP CENTER (CITIZEN OPINION & SUGGESTION POPUP) */}
+      {showHelpCenterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in animate-duration-150">
+          <div className="bg-white rounded-3xl w-full max-w-[500px] overflow-hidden border border-amber-200/60 shadow-2xl flex flex-col transform transition-all scale-100 font-sans">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 text-white p-5 flex items-center justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-8 -mt-8" />
+              <div className="flex items-center gap-2.5 relative z-10">
+                <div className="p-1.5 bg-white/10 rounded-lg shrink-0">
+                  <HelpCircle className="h-5 w-5 text-amber-300 animate-pulse" />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="font-extrabold text-sm md:text-base text-white tracking-wide">সহজ সেবা হেল্প সেন্টার</h3>
+                  <span className="text-[10px] text-amber-100 font-medium tracking-wider uppercase">নাগরিক মতামত, পরামর্শ ও সাহায্য</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowHelpCenterModal(false);
+                  setSuggestionSubmitted(false);
+                }} 
+                className="text-white hover:text-amber-105 bg-white/10 hover:bg-white/20 rounded-xl p-2 transition-all cursor-pointer relative z-10"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <div className="p-6 overflow-y-auto max-h-[75vh]">
+              {suggestionSubmitted ? (
+                <div className="py-6 flex flex-col items-center justify-center text-center space-y-3 animate-fade-in">
+                  <div className="h-12 w-12 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center text-emerald-500">
+                    <CheckCircle2 className="h-6 w-6 animate-bounce" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-black text-slate-800">আপনার মতামত সফলভাবে জমা হয়েছে!</h4>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                      সহজ সেবা হেল্প সেন্টারে আপনার গুরুত্বপূর্ণ সাজেশান বা পরামর্শটি রিয়েল-টাইমে সেভ করা হয়েছে। আমরা দ্রুত এটি পর্যালোচনা করব। ধন্যবাদ!
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowHelpCenterModal(false);
+                      setSuggestionSubmitted(false);
+                      setSuggestionText("");
+                    }}
+                    className="mt-4 px-5 py-2 text-xs font-bold text-white bg-[#15803D] hover:bg-emerald-700 rounded-xl transition-all cursor-pointer shadow-md"
+                  >
+                    বন্ধ করুন
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={submitSuggestionForm} className="space-y-4">
+                  <p className="text-xs text-slate-600 font-bold leading-relaxed mb-1">
+                    সহজ সেবাকে আরও উন্নত ও সমৃদ্ধ করতে আপনার যেকোনো পরামর্শ বা সমস্যার কথা আমাদের জানান। আমরা আপনার মতামত অত্যন্ত গুরুত্ব সহকারে বিবেচনা করি।
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Name field */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1">
+                        <span>আপনার নাম</span>
+                        <span className="text-[8px] text-slate-400 font-normal">(ঐচ্ছিক)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={suggestionName}
+                        onChange={(e) => setSuggestionName(e.target.value)}
+                        placeholder="যেমন: উজ্জ্বল দে"
+                        className="w-full px-3 py-2 text-xs font-semibold border border-slate-200 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-amber-500/10 focus:border-amber-600 bg-white hover:bg-slate-50/50 transition-all text-slate-800"
+                      />
+                    </div>
+
+                    {/* Mobile No field */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1">
+                        <span>মোবাইল নম্বর</span>
+                        <span className="text-[8px] text-slate-400 font-normal">(ঐচ্ছিক)</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={suggestionMobile}
+                        onChange={(e) => setSuggestionMobile(e.target.value)}
+                        placeholder="যেমন: 9382040746"
+                        className="w-full px-3 py-2 text-xs font-semibold border border-slate-200 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-amber-500/10 focus:border-amber-600 bg-white hover:bg-slate-50/50 transition-all text-slate-800 font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Suggestion Type block */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold text-[#334155]">মন্তব্যের ধরন</label>
+                    <select
+                      value={suggestionType}
+                      onChange={(e) => setSuggestionType(e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-semibold border border-slate-200 rounded-xl bg-white text-slate-700 outline-hidden focus:ring-4 focus:ring-amber-500/10 focus:border-amber-600 transition-all cursor-pointer"
+                    >
+                      <option value="difficulty">সমস্যা (Issue/Bug)</option>
+                      <option value="feature">নতুন ফিচার সংক্রান্ত পরামর্শ (Feature Request)</option>
+                      <option value="other">অন্যান্য (Other feedback)</option>
+                    </select>
+                  </div>
+
+                  {/* Message field & submit button */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold text-slate-600 flex items-center justify-between">
+                      <span>আপনার সাজেশান বা অভিযোগ</span>
+                      <span className="text-[8px] text-red-500 font-bold">*প্রয়োজনীয়</span>
+                    </label>
+                    <textarea
+                      value={suggestionText}
+                      onChange={(e) => setSuggestionText(e.target.value)}
+                      required
+                      placeholder="এখানে আপনার সাজেশান বা পরম প্রয়োজনীয় সমস্যাটি বিস্তারিত লিখুন..."
+                      rows={4}
+                      className="w-full px-3 py-2 text-xs font-semibold border border-slate-200 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-amber-500/10 focus:border-amber-600 bg-white hover:bg-slate-50 transition-all text-slate-800 placeholder-slate-400 font-sans"
+                    />
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100/70">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowHelpCenterModal(false);
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-650 hover:bg-red-50 rounded-xl transition-all cursor-pointer border border-transparent hover:border-red-100 font-sans"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={suggestionSubmitting}
+                      className="px-5 py-2.5 text-xs font-black text-white bg-[#15803D] hover:bg-emerald-600 rounded-xl transition-all cursor-pointer shadow-md shadow-[#15803D]/10 hover:shadow-lg flex items-center gap-1.5 font-sans animate-fade-in"
+                    >
+                      {suggestionSubmitting ? (
+                        <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        <>
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          <span>পরামর্শ জমা দিন</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: ADMIN PASSWORD VERIFICATION (ONLY ACCESSED BY TYPING "100") */}
       {showAdminPasswordModal && (
         <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in animate-duration-200">
@@ -3033,7 +3067,70 @@ export default function App() {
         </div>
       )}
 
+      {/* PWA Floating Install Banner */}
+      <AnimatePresence>
+        {showInstallBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-white/95 backdrop-blur-md rounded-2xl border border-[#15803D]/20 shadow-[0_10px_30px_-5px_rgba(21,128,61,0.15)] p-5 z-55 flex flex-col gap-3.5 transform font-sans"
+          >
+            <div className="flex items-start gap-3">
+              <div className="bg-[#15803D]/10 p-2.5 rounded-xl shrink-0 flex items-center justify-center border border-[#15803D]/15">
+                {/* SVG Logo icon directly replicated for sharp vector rendering */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" className="w-9 h-9">
+                  <defs>
+                    <linearGradient id="bannerLogoGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#0F766E" />
+                      <stop offset="40%" stopColor="#15803D" />
+                      <stop offset="100%" stopColor="#22C55E" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="8" y="14" width="94" height="94" rx="28" fill="url(#bannerLogoGrad)" />
+                  <path d="M 26,52 L 48,74 L 88,28" fill="none" stroke="#FFFFFF" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M 28,66 L 48,87 L 86,43" fill="none" stroke="#FFFFFF" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="106" cy="18" r="8" fill="#22C55E" stroke="#15803D" strokeWidth="1" />
+                </svg>
+              </div>
 
+              <div className="flex-1 min-w-0">
+                <h4 className="font-extrabold text-[#0F172A] text-[14px] sm:text-[15px] tracking-tight mb-0.5 leading-snug">
+                  সহজ সেবা অ্যাপ ইনস্টল করুন
+                </h4>
+                <p className="text-slate-500 text-[11px] sm:text-xs leading-relaxed font-semibold">
+                  এক ক্লিকে সকল সরকারি প্রকল্প, চাকরি ও নাগরিক তথ্য দ্রুত অ্যাক্সেস করতে হোম স্ক্রিনে অ্যাপটি ডাউনলোড করুন।
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowInstallBanner(false)}
+                className="text-slate-400 hover:text-slate-650 p-1 hover:bg-slate-50 rounded-full transition-colors cursor-pointer shrink-0"
+                aria-label="Close"
+              >
+                <X className="h-4.5 w-4.5 stroke-[2.5]" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2.5 justify-end">
+              <button
+                onClick={() => setShowInstallBanner(false)}
+                className="px-4 py-2 text-[11px] font-extrabold text-[#15803D] hover:bg-[#15803D]/5 rounded-xl transition-all cursor-pointer border border-[#15803D]/10 hover:border-[#15803D]/25"
+              >
+                পরে করুন
+              </button>
+              <button
+                onClick={handleInstallApp}
+                className="px-4.5 py-2 text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 rounded-xl transition-all cursor-pointer shadow-md shadow-[#15803D]/10 hover:shadow-lg hover:shadow-[#15803D]/20 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
+              >
+                <Smartphone className="h-3.5 w-3.5 stroke-[2.5]" />
+                <span>ডাউনলোড করুন</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
